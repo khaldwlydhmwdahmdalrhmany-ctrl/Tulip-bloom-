@@ -378,3 +378,65 @@ npm run dev
 ```
 
 بلا `DATABASE_URL` يسقط التطبيق تلقائيًا إلى SQLite في `data/areej.db`.
+
+---
+
+# ٩. مشروع Supabase — جاهز
+
+| | |
+|---|---|
+| الاسم | **Tulip Bloom** |
+| المرجع (ref) | `aepdabfzzgihmasexkdu` |
+| المنطقة | `eu-central-1` (فرانكفورت) |
+| الخطة | Free — **$0 شهريًا** |
+| API URL | `https://aepdabfzzgihmasexkdu.supabase.co` |
+
+**اختيار المنطقة:** فرانكفورت أقرب منطقة AWS ذات ارتباط جيد بالخليج (البحرين `me-south-1` غير متاحة في Supabase). المهم أن تضبط منطقة دوال Vercel على `fra1` أيضًا — إن بقيت على الافتراضي `iad1` (واشنطن) فكل استعلام يقطع المحيط الأطلسي ذهابًا وإيابًا.
+
+> ⚠️ مشروع **Areej admin** الإنتاجي لم يُلمس. المشروع الثالث المتوقف (`pquyemgqqdepzykbsfmv`) تُرك كما هو.
+
+## ما طُبِّق
+
+| # | الترحيلة | المحتوى |
+|---|---|---|
+| ١ | `store_core_tables_and_indexes` | ٧ جداول · ١٣ فهرسًا · ٥ قيود · تسلسل `order_number_seq` |
+| ٢ | `store_core_rls_and_privileges` | RLS على السبعة · سحب صلاحيات `anon`/`authenticated` · `ALTER DEFAULT PRIVILEGES` · ٣ صفحات قانونية · `schema_version = 7` |
+| ٣ | البيانات | ٨ تصنيفات · ٢٥ منتجًا · ٣ بنرات · ٥ مفاتيح هوية في `settings` |
+
+## التحقق
+
+```
+الجدول        rls    force
+banners       true   false
+categories    true   false
+legal_pages   true   false
+orders        true   false
+products      true   false
+settings      true   false
+visits        true   false
+```
+
+مطابق للمواصفة. `get_advisors` يُعيد ٧ تنبيهات `INFO` بعنوان «RLS enabled, no policies» — **صحيحة ومقصودة**. لا تُضِف سياسات لتسكيتها: غياب السياسة هو المنع الكامل، والتطبيق يتصل بدور `postgres` (مالك الجداول) الذي يتجاوز RLS ما دام `FORCE` معطّلًا.
+
+## توزيع الكتالوج
+
+| التصنيف | المنتجات | النطاق السعري |
+|---|---|---|
+| باقات الورد | ٤ | ١٦٥ – ٥٢٠ |
+| صناديق ورد | ٣ | ٢٤٠ – ٦١٠ |
+| تنسيقات فازات | ٣ | ١٩٥ – ٤٤٥ |
+| ورد المناسبات | ٣ | ٣٩٥ – ٧٥٠ |
+| هدايا وشوكولاتة | ٣ | ٣٤٠ – ٦٩٠ |
+| نباتات داخلية | ٣ | ٢٢٥ – ٤٢٠ |
+| عطور وشموع | ٣ | ١٤٥ – ٢٦٥ |
+| إضافات وبطاقات | ٣ | ٨٩ – ١٢٠ |
+
+## ما تبقّى عليك
+
+**كلمة مرور القاعدة** هي الشيء الوحيد الذي لا أستطيع قراءته — تُعرض مرة واحدة عند الإنشاء فقط:
+
+`Supabase ← Project Settings ← Database ← Reset database password`
+
+ولّد كلمة **بحروف وأرقام و`_` و`-` فقط** — الرموز `@ # / :` تكسر رابط الاتصال. ثم ضعها في `DATABASE_URL` مكان `[YOUR-PASSWORD]` في `.env.local`.
+
+انسخ `.env.local.example` إلى `.env.local` — فيه `SESSION_SECRET` و`ADMIN_PASSWORD` مولَّدان بالفعل.
