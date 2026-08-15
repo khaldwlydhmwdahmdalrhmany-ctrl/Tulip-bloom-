@@ -110,14 +110,30 @@ export const ACTIVE_THEME = "tulip";
 
 /* ── التايبوغرافيا ── */
 export const TYPOGRAPHY = {
-  fontFamily: "'IBM Plex Sans Arabic', system-ui, sans-serif",
+  /**
+   * خطّان لا خط واحد.
+   *
+   * النواة كانت تستخدم عائلة واحدة للعناوين والنصوص معًا، فلا يوجد
+   * تباين طباعي — وهو أكبر سبب في تشابه كل المتاجر المبنية عليها.
+   *
+   * • Almarai للنصوص: هندسي نظيف، عالي الوضوح في الأحجام الصغيرة،
+   *   ممتاز لبطاقات المنتجات والجداول.
+   * • El Messiri للعناوين: إنساني بدفء خطّي خفيف — يعطي طابع
+   *   البوتيك دون الوقوع في الزخرفة الثقيلة.
+   */
+  fontFamily: "'Almarai', system-ui, sans-serif",
+  headingFontFamily: "'El Messiri', 'Almarai', system-ui, sans-serif",
   googleFontUrl:
-    "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap",
+    "https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&family=El+Messiri:wght@400;500;600;700&display=swap",
   // العربية تحتاج ارتفاع سطر أعلى من اللاتينية للقراءة المريحة
-  bodyLineHeight: 1.85,
-  headingLineHeight: 1.35,
-  // 700 بدل 800 — العناوين العريضة جدًا تُفقد الهوية أناقتها
-  headingWeight: 700,
+  bodyLineHeight: 1.9,
+  headingLineHeight: 1.4,
+  headingWeight: 600,
+  /**
+   * ⚠️ التتبّع السالب يضرّ العربية: الحروف متصلة، وتقريبها يُلصق
+   * الأسنان ببعضها. النواة كانت تضع -0.01em على كل العناوين.
+   */
+  headingLetterSpacing: "0",
 };
 
 /* ── الأشكال ── */
@@ -165,7 +181,11 @@ export function themeCssVars(name = ACTIVE_THEME) {
     `  --btn-radius: ${SHAPES.buttonRadius};`,
     `  --card-radius: ${SHAPES.cardRadius};`,
     `  --font-body: ${TYPOGRAPHY.fontFamily};`,
+    `  --font-heading: ${TYPOGRAPHY.headingFontFamily};`,
     `  --lh-body: ${TYPOGRAPHY.bodyLineHeight};`,
+    `  --lh-heading: ${TYPOGRAPHY.headingLineHeight};`,
+    `  --w-heading: ${TYPOGRAPHY.headingWeight};`,
+    `  --ls-heading: ${TYPOGRAPHY.headingLetterSpacing};`,
     "}",
   ].join("\n");
 }

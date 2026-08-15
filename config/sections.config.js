@@ -4,35 +4,27 @@
  * ═══════════════════════════════════════════════════════════
  *
  * ترتيب الأقسام وإعداداتها يُدار من هنا — لا من ملف الصفحة.
- * غيّر الترتيب، أو أطفئ قسمًا بـ `enabled: false`، أو كرّر قسمًا
- * بإعدادات مختلفة — بلا لمس أي مكوّن.
- *
  * `type` يجب أن يطابق مفتاحًا في components/sections/registry.jsx
  *
- * ⚠️ `columns` يُبنى كصنف Tailwind ديناميكي (`lg:grid-cols-${cols}`)
- *    والمشروع بلا `safelist`. القيم الآمنة الوحيدة هي التي تظهر
- *    حرفيًا في مكوّنات أخرى: 4 · 5 · 6. لا تستخدم غيرها.
+ * ⚠️ `columns` يُبنى كصنف Tailwind ديناميكي بلا `safelist`.
+ *    القيم الآمنة: 4 · 5 · 6 فقط.
  *
- * منطق ترتيب الرئيسية:
- *   الهيرو ← المميزات ← «ما هي المناسبة؟» (نية الشراء أولًا)
- *   ← التصنيفات ← الأكثر مبيعًا ← دليل المقاسات (يزيل التردد
- *   قبل العروض) ← العروض ← خطوات الطلب ← لماذا نحن ← الثقة
- *   ← الأسئلة ← الدعوة.
+ * ── منطق الترتيب ──
+ * هيرو تحريري (لا شريط بنرات) ← عدّاد التوصيل مباشرة تحته
+ * لأن الاستعجال يعمل وقت وصول الانتباه لا بعد التمرير ←
+ * المناسبة قبل النوع (الزائر يفكّر «تخرّج» لا «باقات») ←
+ * لوك بوك غير متناظر ← التصنيفات ← مرشّح الهدايا في منتصف
+ * الصفحة حيث يبلغ التردّد ذروته ← المقاسات ← العروض ←
+ * خطوات الطلب ← دليل العناية (يطمئن قبل الشراء لا بعده) ←
+ * لماذا نحن ← الثقة ← الأسئلة ← الدعوة.
  */
 
 export const HOME_SECTIONS = [
+  { type: "editorialHero", enabled: true, props: {} },
+
+  { type: "deliveryCountdown", enabled: true, props: { cutoffHour: 18 } },
+
   {
-    type: "hero",
-    enabled: true,
-    props: { placement: "home" },
-  },
-  {
-    type: "features",
-    enabled: true,
-    props: {},
-  },
-  {
-    // ⭐ قسم مضاف — الزائر يفكّر بالمناسبة قبل أن يفكّر بنوع الورد
     type: "occasions",
     enabled: true,
     props: {
@@ -41,6 +33,22 @@ export const HOME_SECTIONS = [
       desc: "اختر المناسبة ونرشّح لك ثلاثة خيارات على واتساب خلال دقائق.",
     },
   },
+
+  {
+    type: "lookbook",
+    enabled: true,
+    props: {
+      source: "bestSellers",
+      eyebrow: "الأكثر طلبًا",
+      title: "تشكيلة مختارة",
+      desc: "ما يطلبه عملاؤنا أكثر من غيره.",
+      href: "/shop",
+      hrefLabel: "كل التشكيلة",
+      limit: 5,
+      background: "alt",
+    },
+  },
+
   {
     type: "categories",
     enabled: true,
@@ -52,25 +60,20 @@ export const HOME_SECTIONS = [
       columns: 4,
     },
   },
+
   {
-    type: "productGrid",
+    type: "giftFinder",
     enabled: true,
     props: {
-      source: "bestSellers",
-      eyebrow: "الأكثر طلبًا",
-      title: "تشكيلة مختارة",
-      desc: "ما يطلبه عملاؤنا أكثر من غيره.",
-      href: "/shop",
-      hrefLabel: "كل التشكيلة",
-      limit: 8,
+      eyebrow: "مساعد الاختيار",
+      title: "ثلاثة أسئلة ونرشّح لك",
+      desc: "أغلب من يغادر متجر ورد يغادر لأنه لم يعرف ماذا يختار — لا لأن السعر مرتفع.",
+      background: "tint",
     },
   },
-  {
-    // ⭐ قسم مضاف — بديل حقل `sizes`: يزيل تردّد «أي مقاس أطلب؟»
-    type: "sizeGuide",
-    enabled: true,
-    props: { background: "alt" },
-  },
+
+  { type: "sizeGuide", enabled: true, props: {} },
+
   {
     type: "productGrid",
     enabled: true,
@@ -82,11 +85,11 @@ export const HOME_SECTIONS = [
       href: "/offers",
       hrefLabel: "كل العروض",
       limit: 4,
-      background: "tint",
+      background: "alt",
     },
   },
+
   {
-    // ⭐ قسم مضاف — بديل HowItWorks الذي يحمل نصًّا ثابتًا لمجال آخر
     type: "orderSteps",
     enabled: true,
     props: {
@@ -95,26 +98,27 @@ export const HOME_SECTIONS = [
       desc: "أربع خطوات من الاختيار حتى تأكيد التسليم.",
     },
   },
+
   {
-    type: "banner",
-    enabled: false,
-    props: { placement: "home", index: 1 },
-  },
-  {
-    type: "whyUs",
+    type: "careGuide",
     enabled: true,
-    props: {},
+    props: {
+      eyebrow: "بعد التسليم",
+      title: "كيف يبقى الورد أطول",
+      desc: "أربع عادات تضيف يومين إلى ثلاثة لعمر أي باقة.",
+      background: "alt",
+    },
   },
-  {
-    type: "trust",
-    enabled: true,
-    props: {},
-  },
+
+  { type: "whyUs", enabled: true, props: {} },
+  { type: "trust", enabled: true, props: {} },
+
   {
     type: "testimonials",
     enabled: true,           // يختفي تلقائيًا — TESTIMONIALS فارغة عمدًا
     props: { eyebrow: "آراء عملائنا", title: "ثقة نبنيها كل يوم" },
   },
+
   {
     type: "faq",
     enabled: true,
@@ -123,17 +127,13 @@ export const HOME_SECTIONS = [
       title: "أسئلة تصلنا كل يوم",
       desc: "لم تجد إجابتك؟ راسلنا على واتساب.",
       href: "/faq",
-      background: "alt",
     },
   },
-  {
-    type: "cta",
-    enabled: true,
-    props: {},
-  },
+
+  { type: "cta", enabled: true, props: {} },
 ];
 
-/** أقسام صفحة التصنيف — أبسط. */
+/** أقسام صفحة التصنيف. */
 export const CATEGORY_SECTIONS = [
   { type: "pageHero", enabled: true, props: {} },
   { type: "trust", enabled: true, props: {} },
@@ -141,7 +141,7 @@ export const CATEGORY_SECTIONS = [
   { type: "cta", enabled: true, props: {} },
 ];
 
-/** أقسام صفحة المتجر — دليل المقاسات يظهر بعد التصفّح لا قبله. */
+/** أقسام صفحة المتجر. */
 export const SHOP_SECTIONS = [
   { type: "pageHero", enabled: true, props: {} },
   { type: "trust", enabled: true, props: {} },

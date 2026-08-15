@@ -6,6 +6,8 @@ import {
   TESTIMONIALS,
   CTA as CTA_CONTENT,
   // ── ثوابت متجر توليب بلوم ──
+  EDITORIAL_HERO,
+  CARE_STEPS,
   SIZE_TIERS,
   SIZE_NOTE,
   OCCASIONS,
@@ -22,6 +24,9 @@ import SectionHead from "../site/SectionHead.jsx";
 import WhyUs from "../site/WhyUs.jsx";
 import FaqAccordion from "../site/FaqAccordion.jsx";
 import CtaBand from "../site/CtaBand.jsx";
+
+// ── أقسام تفاعلية خاصة بتوليب بلوم (مكوّنات عميل) ──
+import { DeliveryCountdown, GiftFinder, CareGuide } from "./TulipSections.jsx";
 
 /**
  * ═══════════════════════════════════════════════════════════
@@ -409,6 +414,167 @@ export const SECTIONS = {
             );
           })}
         </ol>
+      </Wrap>
+    );
+  },
+
+  /* ═══════════════════════════════════════════════════════════
+   *  أقسام إضافية — توليب بلوم (إضافة فقط)
+   * ═══════════════════════════════════════════════════════════ */
+
+  /* ── عدّاد قطع الطلب ── */
+  deliveryCountdown: (props) => (
+    <DeliveryCountdown cutoffHour={props.cutoffHour ?? 18} background={props.background} />
+  ),
+
+  /* ── مُرشِّح الهدايا ── */
+  giftFinder: (props) => (
+    <GiftFinder
+      eyebrow={props.eyebrow}
+      title={props.title}
+      desc={props.desc}
+      background={props.background}
+    />
+  ),
+
+  /* ── دليل العناية ── */
+  careGuide: (props) => (
+    <CareGuide
+      eyebrow={props.eyebrow}
+      title={props.title}
+      desc={props.desc}
+      steps={props.steps || CARE_STEPS}
+      background={props.background}
+    />
+  ),
+
+  /**
+   * ── هيرو تحريري ──
+   * بديل شريط البنرات: طباعة كبيرة على جهة، ولوحة بلاطات
+   * غير متساوية الارتفاع على الأخرى. الغرض كسر التناظر الذي
+   * يجعل كل متجر مبني على النواة يشبه الآخر.
+   */
+  editorialHero: (props) => {
+    const h = { ...EDITORIAL_HERO, ...props };
+    return (
+      <section style={{ background: bg(props.background) || C.pearl }}>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-10 pb-12 sm:pt-16 sm:pb-20">
+          <div className="grid lg:grid-cols-[1.05fr_1fr] gap-10 lg:gap-14 items-center">
+
+            {/* النص */}
+            <div className="flex flex-col gap-6 rise">
+              {h.eyebrow && <span className="eyebrow">{h.eyebrow}</span>}
+              <h1 className="h-display font-display" style={{ color: C.navy }}>
+                {h.title}
+                {h.titleAccent && (
+                  <>
+                    <br />
+                    <span style={{ color: C.teal }}>{h.titleAccent}</span>
+                  </>
+                )}
+              </h1>
+              <p className="text-base leading-loose max-w-md" style={{ color: C.slate }}>
+                {h.desc}
+              </p>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <Link href={h.primaryHref || "/shop"} className="btn px-7 py-3.5 text-sm"
+                      style={{ background: C.navy, color: "#fff" }}>
+                  {h.primaryLabel} <ArrowLeft size={16} className="arrow-slide" />
+                </Link>
+                {h.secondaryLabel && (
+                  <Link href={h.secondaryHref || "/offers"} className="btn px-7 py-3.5 text-sm"
+                        style={{ background: "transparent", color: C.navy, border: `1px solid ${C.line}` }}>
+                    {h.secondaryLabel}
+                  </Link>
+                )}
+              </div>
+
+              {h.points?.length > 0 && (
+                <ul className="flex flex-wrap gap-x-6 gap-y-2 pt-2">
+                  {h.points.map((pt) => {
+                    const I = getIcon(pt.icon);
+                    return (
+                      <li key={pt.label} className="flex items-center gap-2 text-xs font-bold"
+                          style={{ color: C.slate }}>
+                        <I size={14} style={{ color: C.teal }} /> {pt.label}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+
+            {/* لوحة بصرية غير متناظرة */}
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
+              {(h.tiles || []).map((t, i) => {
+                const I = getIcon(t.icon);
+                const lead = i === 0;
+                return (
+                  <Link
+                    key={t.label}
+                    href={t.href || "/shop"}
+                    className="lift group relative rounded-2xl overflow-hidden flex flex-col justify-end p-5"
+                    style={{
+                      // البلاطة الأولى تمتد صفّين — الارتفاع المتفاوت هو ما يكسر الشبكة
+                      minHeight: lead ? "17rem" : "8rem",
+                      gridRow: lead ? "span 2" : "span 1",
+                      background: lead ? C.navy : C.mintTint,
+                      border: lead ? "none" : `1px solid ${C.line}`,
+                    }}
+                  >
+                    <span
+                      className="absolute -top-10 -left-8 w-40 h-40 rounded-full blur-3xl opacity-25 pointer-events-none"
+                      style={{ background: lead ? C.teal : C.soft }}
+                    />
+                    <span className="relative mb-2" style={{ color: lead ? C.teal : C.navy }}>
+                      <I size={lead ? 26 : 20} />
+                    </span>
+                    <span className="relative font-display text-base leading-tight"
+                          style={{ color: lead ? "#fff" : C.navy }}>
+                      {t.label}
+                    </span>
+                    {t.note && (
+                      <span className="relative text-xs mt-1"
+                            style={{ color: lead ? "#ffffffAA" : C.slate }}>
+                        {t.note}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  },
+
+  /**
+   * ── لوك بوك ──
+   * شبكة تحريرية: أول منتج يمتد عمودين. تكسر رتابة الشبكة
+   * المتساوية دون أي تغيير في بطاقة المنتج نفسها.
+   */
+  lookbook: (props, data) => {
+    // نفس آلية productGrid — لا مصدر بيانات موازٍ
+    const items = pickProducts(props.source || "bestSellers", data, props.limit || 5);
+    if (!items.length) return null;
+    return (
+      <Wrap background={props.background}>
+        <SectionHead
+          eyebrow={props.eyebrow}
+          title={props.title}
+          desc={props.desc}
+          href={props.href}
+          hrefLabel={props.hrefLabel}
+        />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          {items.map((p, i) => (
+            <div key={p.id} className={i === 0 ? "lookbook-wide" : ""}>
+              <ProductCard product={p} />
+            </div>
+          ))}
+        </div>
       </Wrap>
     );
   },
