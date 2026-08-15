@@ -7,16 +7,36 @@
    ============================================================ */
 
 :root {
-  --navy: #0C1C77;
-  --teal: #00C6C7;
-  --ink: #0B1220;
-  --slate: #4A5A63;
-  --line: #E1ECE8;
+  /*
+   * ⚠️ قيم احتياطية فقط. المصدر الحقيقي هو themeCssVars() المحقونة
+   * من app/layout.jsx — تعرّف --c-primary و --c-accent وبقية الطيف.
+   * الأسماء القديمة تبقى مربوطة بالجديدة حتى لا ينكسر أي مكوّن.
+   */
+  --c-primary: #2E2A2B;
+  --c-accent: #C4707F;
+  --c-ink: #241F20;
+  --c-muted: #6B5F61;
+  --c-line: #EDE3E1;
+  --c-surface-alt: #FAF6F4;
+  --c-soft: #F0D9DD;
 
-  /* سلّم مسافات موحّد */
-  --sp-section: clamp(3.5rem, 7vw, 6rem);
-  --radius: 1rem;
-  --radius-lg: 1.5rem;
+  --navy: var(--c-primary);
+  --teal:  var(--c-accent);
+  --ink:   var(--c-ink);
+  --slate: var(--c-muted);
+  --line:  var(--c-line);
+
+  /* سلّم مسافات موحّد — أوسع قليلًا: الفراغ هو أرخص وسيلة للأناقة */
+  --sp-section: clamp(4rem, 8vw, 7rem);
+  --radius: 0.875rem;
+  --radius-lg: 1.25rem;
+
+  --font-body: 'Almarai', system-ui, sans-serif;
+  --font-heading: 'El Messiri', 'Almarai', system-ui, sans-serif;
+  --lh-body: 1.9;
+  --lh-heading: 1.4;
+  --w-heading: 600;
+  --ls-heading: 0;
 }
 
 * { -webkit-tap-highlight-color: transparent; }
@@ -25,35 +45,56 @@ html { scroll-behavior: smooth; }
 
 body {
   margin: 0;
-  font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  font-family: var(--font-body);
   color: var(--ink);
   background: #fff;
   /* العربية تحتاج ارتفاع سطر أعلى من اللاتينية للقراءة المريحة */
-  line-height: 1.85;
+  line-height: var(--lh-body);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
 /* العناوين: ارتفاع سطر أقل + تتبّع أضيق = تسلسل بصري أوضح */
 h1, h2, h3, h4, .font-display {
-  font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
-  font-weight: 800;
-  line-height: 1.3;
-  letter-spacing: -0.01em;
+  font-family: var(--font-heading);
+  font-weight: var(--w-heading);
+  line-height: var(--lh-heading);
+  /* ⚠️ صفر لا سالب: العربية متصلة، والتقريب يُلصق الأسنان ببعضها */
+  letter-spacing: var(--ls-heading);
+}
+
+/* الأرقام والنصوص اللاتينية داخل العناوين ترجع لخط النص —
+   El Messiri أرقامه ضعيفة مقارنة بـ Almarai */
+.num, .h-display .num, .price {
+  font-family: var(--font-body);
+  font-feature-settings: "tnum" 1;
 }
 
 p { max-width: 68ch; }
 
 /* عناوين متجاوبة تلقائيًا — أكبر مما كانت */
-.h-display { font-size: clamp(1.9rem, 4.5vw, 3.25rem); line-height: 1.2; }
-.h-section  { font-size: clamp(1.5rem, 3vw, 2.25rem); }
-.h-card     { font-size: clamp(1rem, 1.6vw, 1.15rem); }
+.h-display { font-size: clamp(2.1rem, 5.2vw, 3.9rem); line-height: 1.25; }
+.h-section  { font-size: clamp(1.6rem, 3.4vw, 2.6rem); }
+.h-card     { font-size: clamp(1rem, 1.6vw, 1.15rem); font-weight: 600; }
 
 .eyebrow {
-  font-size: .75rem;
+  font-family: var(--font-body);
+  font-size: .7rem;
   font-weight: 700;
-  letter-spacing: .04em;
-  color: var(--teal);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--c-accent);
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+}
+/* شرطة قصيرة قبل العنوان الفرعي — إشارة تحريرية صغيرة */
+.eyebrow::before {
+  content: "";
+  width: 1.75rem;
+  height: 1px;
+  background: currentColor;
+  opacity: .55;
 }
 
 .section-y { padding-block: var(--sp-section); }
@@ -68,8 +109,9 @@ p { max-width: 68ch; }
               border-color .28s ease;
 }
 .lift:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 22px 44px -22px rgba(12,28,119,0.30);
+  transform: translateY(-4px);
+  box-shadow: 0 24px 48px -24px color-mix(in srgb, var(--c-primary) 34%, transparent);
+  border-color: color-mix(in srgb, var(--c-accent) 40%, transparent);
 }
 
 /* تكبير الصورة داخل البطاقة عند المرور */
@@ -86,7 +128,8 @@ a:hover > .arrow-slide { transform: translateX(-4px); }
 /* الأزرار */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
-  font-weight: 700; border-radius: 999px;
+  font-weight: 700; border-radius: var(--btn-radius, .75rem);
+  font-family: var(--font-body);
   transition: transform .18s ease, box-shadow .22s ease, background-color .22s ease, opacity .2s ease;
   cursor: pointer; border: none;
 }
@@ -114,7 +157,7 @@ a:hover > .arrow-slide { transform: translateX(-4px); }
 /* هيكل تحميل */
 @keyframes shimmer { 100% { background-position: -200% 0; } }
 .skeleton {
-  background: linear-gradient(90deg, #EEF5F2 25%, #F8FBFA 50%, #EEF5F2 75%);
+  background: linear-gradient(90deg, var(--c-soft) 25%, var(--c-surface-alt) 50%, var(--c-soft) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.4s infinite;
 }
@@ -124,7 +167,7 @@ a:hover > .arrow-slide { transform: translateX(-4px); }
    ============================================================ */
 
 :focus-visible {
-  outline: 3px solid var(--teal);
+  outline: 3px solid var(--c-accent);
   outline-offset: 2px;
   border-radius: 6px;
 }
@@ -155,11 +198,16 @@ a:hover > .arrow-slide { transform: translateX(-4px); }
 }
 
 ::-webkit-scrollbar { width: 9px; height: 9px; }
-::-webkit-scrollbar-track { background: #F6FAF9; }
-::-webkit-scrollbar-thumb { background: #00C6C755; border-radius: 999px; }
-::-webkit-scrollbar-thumb:hover { background: #00C6C788; }
+::-webkit-scrollbar-track { background: var(--c-surface-alt); }
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--c-accent) 45%, transparent);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--c-accent) 75%, transparent);
+}
 
-::selection { background: #A9E2BD; color: #0B1220; }
+::selection { background: var(--c-soft); color: var(--c-ink); }
 
 /* ============================================================
    نبض الاستعجال — للأزرار ذات الدلالة العاجلة فقط.
@@ -230,3 +278,64 @@ input, select, textarea, button {
 
 /* الكلمات الطويلة (روابط، معرّفات) تنكسر بدل توسيع الصفحة */
 .break-anywhere { overflow-wrap: anywhere; word-break: break-word; }
+
+
+/* ============================================================
+   طبقة البوتيك — إضافات بصرية خاصة بمتجر الورود
+   لا تلغي أي صنف قائم؛ أصناف جديدة تُستدعى عند الحاجة فقط.
+   ============================================================ */
+
+/* قاعدة خفيفة تفصل الأقسام بلا خط صريح */
+.section-alt { background: var(--c-surface-alt); }
+
+/* خط شعري رفيع — بديل الحدود السميكة */
+.hairline { border-color: color-mix(in srgb, var(--c-line) 85%, transparent); }
+
+/* بطاقة بوتيك: حد شعري، ظل شبه معدوم، يظهر عند المرور فقط */
+.card-boutique {
+  background: #fff;
+  border: 1px solid var(--c-line);
+  border-radius: var(--card-radius, .875rem);
+  transition: border-color .3s ease, box-shadow .3s ease, transform .3s ease;
+}
+.card-boutique:hover {
+  border-color: color-mix(in srgb, var(--c-accent) 45%, transparent);
+  box-shadow: 0 18px 40px -26px color-mix(in srgb, var(--c-primary) 40%, transparent);
+}
+
+/* رقم ترتيبي كبير باهت — يستعمله قسم خطوات الطلب */
+.step-numeral {
+  font-family: var(--font-heading);
+  font-size: clamp(2.2rem, 5vw, 3rem);
+  line-height: 1;
+  color: color-mix(in srgb, var(--c-accent) 22%, transparent);
+}
+
+/* اقتباس تحريري */
+.pull-quote {
+  font-family: var(--font-heading);
+  font-size: clamp(1.15rem, 2.4vw, 1.6rem);
+  line-height: 1.7;
+  color: var(--c-primary);
+}
+
+/* شبكة لوك بوك: عنصر يمتد عمودين */
+.lookbook-wide { grid-column: span 2; }
+@media (max-width: 640px) { .lookbook-wide { grid-column: span 1; } }
+
+/* شريط لاصق أسفل الشاشة على الجوال */
+.action-dock {
+  position: sticky;
+  bottom: 0;
+  z-index: 30;
+  background: color-mix(in srgb, #fff 92%, transparent);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid var(--c-line);
+}
+
+/* نبض هادئ لعدّاد التوصيل — بلا وميض */
+@keyframes softBeat {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: .45; }
+}
+.beat { animation: softBeat 1.6s ease-in-out infinite; }

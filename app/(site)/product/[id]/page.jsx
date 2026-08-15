@@ -8,6 +8,7 @@ import ProductVisual from "../../../../components/site/ProductVisual.jsx";
 import ProductCard from "../../../../components/site/ProductCard.jsx";
 import InstallmentBadge from "../../../../components/site/InstallmentBadge.jsx";
 import ProductActions from "../../../../components/site/ProductActions.jsx";
+import MobileOrderDock from "../../../../components/site/MobileOrderDock.jsx";
 import ProductViewTracker from "../../../../components/site/ProductViewTracker.jsx";
 import {
   productMetadata, productSchema, breadcrumbSchema, faqSchema,
@@ -232,6 +233,9 @@ export default async function ProductPage({ params }) {
         primaryHref={`/category/${product.category?.slug}`}
         whatsappMessage={`السلام عليكم، عندي استفسار عن: ${product.name}`}
       />
+
+      {/* شريط الطلب اللاصق — الجوال فقط، يظهر بعد التمرير */}
+      <MobileOrderDock product={product} />
     </div>
   );
 }

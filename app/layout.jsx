@@ -3,7 +3,7 @@ import { getSettings } from "../lib/queries.js";
 import AnalyticsScripts, { GtmNoScript } from "../components/site/AnalyticsScripts.jsx";
 import { organizationSchema, websiteSchema, JsonLd, siteUrl } from "../lib/seo.jsx";
 import { STORE } from "../config/store.config.js";
-import { themeColors } from "../config/theme.config.js";
+import { themeColors, themeCssVars, TYPOGRAPHY } from "../config/theme.config.js";
 
 /** العنوان والوصف والأيقونة — كلها من لوحة التحكم مع قيم افتراضية. */
 export async function generateMetadata() {
@@ -61,10 +61,15 @@ export default async function RootLayout({ children }) {
         {/* preconnect يوفّر جولة ذهاب وإياب كاملة قبل طلب ملف الخط */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"
-          rel="stylesheet"
-        />
+        {/* ⚠️ إصلاح خلل نواة: الرابط كان مثبّتًا على خط واحد ويتجاهل التهيئة */}
+        <link href={TYPOGRAPHY.googleFontUrl} rel="stylesheet" />
+        {/*
+          ⚠️ إصلاح خلل نواة: `themeCssVars()` كانت معرّفة في theme.config.js
+          ولا تُستدعى في أي مكان، فبقيت متغيّرات globals.css مثبّتة على
+          ألوان ثيم aqua — شريط التمرير وحلقة التركيز وظلّ البطاقات
+          وتظليل النص. حقنها هنا يربط الورقة كلها بالثيم النشط.
+        */}
+        <style dangerouslySetInnerHTML={{ __html: themeCssVars() }} />
         {settings.gsc_verification && (
           <meta name="google-site-verification" content={settings.gsc_verification} />
         )}

@@ -3,12 +3,36 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { STORE } from "../../config/store.config.js";
+import { themeColors, TYPOGRAPHY } from "../../config/theme.config.js";
 import {
   LayoutGrid, Package, Tags, Image as ImageIcon, ShoppingBag,
-  LogOut, Settings, BarChart3, Menu, X, ExternalLink, Percent, FileText,
+  LogOut, Settings, BarChart3, Menu, X, ExternalLink, Percent, FileText, Flower2,
 } from "lucide-react";
 
-const C = { navy: "#0C1C77", navyDeep: "#071233", teal: "#00C6C7", line: "#E1ECE8", slate: "#5C6B72", offWhite: "#F6FAF9", ink: "#0B1220", danger: "#c05050" };
+/**
+ * ⚠️ إصلاح خلل نواة: كان هنا كائن ألوان مكتوب يدويًا
+ *   { navy: "#0C1C77", teal: "#00C6C7", ... }
+ * يتجاهل theme.config.js تمامًا. النتيجة أن لوحة التحكم تبقى
+ * بألوان ثيم aqua في كل متجر مهما غُيّر الثيم.
+ *
+ * الآن تُشتق من الثيم النشط — الأسماء القديمة محفوظة كما هي
+ * حتى لا ينكسر أي استعمال داخل الملف.
+ */
+const T = themeColors();
+const C = {
+  navy: T.primary,
+  navyDeep: T.primaryDeep,
+  teal: T.accent,
+  line: T.line,
+  slate: T.muted,
+  offWhite: T.surfaceAlt,
+  ink: T.ink,
+  danger: T.danger,
+  soft: T.soft,
+  softTint: T.softTint,
+  gold: T.gold,
+  success: T.success,
+};
 
 const NAV = [
   { href: "/admin", label: "نظرة عامة", icon: LayoutGrid },
@@ -58,10 +82,20 @@ export default function AdminLayout({ children }) {
             key={item.href}
             href={item.href}
             onClick={onNavigate}
-            className="flex items-center gap-2.5 px-3 py-3 rounded-xl text-sm font-bold transition-colors"
-            style={active ? { background: C.navy, color: "#fff" } : { color: C.ink }}
+            className="relative flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-all"
+            style={
+              active
+                ? { background: C.softTint, color: C.navy, fontWeight: 700 }
+                : { color: C.slate, fontWeight: 500 }
+            }
           >
-            <item.icon size={17} /> {item.label}
+            {active && (
+              <span
+                className="absolute right-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-full"
+                style={{ background: C.teal }}
+              />
+            )}
+            <item.icon size={17} style={{ color: active ? C.teal : C.slate }} /> {item.label}
           </Link>
         );
       })}
@@ -105,7 +139,7 @@ export default function AdminLayout({ children }) {
       {menuOpen && (
         <div
           className="sm:hidden fixed inset-0 z-50"
-          style={{ background: "rgba(7,18,51,.6)" }}
+          style={{ background: `${C.navyDeep}99` }}
           onClick={() => setMenuOpen(false)}
         >
           <nav
@@ -114,9 +148,16 @@ export default function AdminLayout({ children }) {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4 px-1">
-              <div className="font-display text-lg" style={{ color: C.navy, fontWeight: 800 }}>
-                {STORE.shortName}
-                <div className="text-xs font-medium" style={{ color: C.slate }}>لوحة التحكم</div>
+              <div className="flex items-center gap-2.5">
+                <span className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: C.navy, color: "#fff" }}>
+                  <Flower2 size={18} />
+                </span>
+                <div>
+                  <div style={{ color: C.navy, fontFamily: TYPOGRAPHY.headingFontFamily, fontWeight: 600 }}>
+                    {STORE.shortName}
+                  </div>
+                  <div className="text-[10px] tracking-[.14em] uppercase" style={{ color: C.slate }}>لوحة التحكم</div>
+                </div>
               </div>
               <button
                 onClick={() => setMenuOpen(false)}
@@ -149,9 +190,29 @@ export default function AdminLayout({ children }) {
         className="w-60 shrink-0 hidden sm:flex flex-col gap-1 p-4 sticky top-0 h-screen"
         style={{ background: "#fff", borderLeft: `1px solid ${C.line}` }}
       >
-        <div className="font-display text-lg px-2 py-4" style={{ color: C.navy, fontWeight: 800 }}>
-          {STORE.shortName}
-          <div className="text-xs font-medium" style={{ color: C.slate }}>لوحة التحكم</div>
+        <div className="px-2 pt-5 pb-6">
+          <div className="flex items-center gap-2.5">
+            <span
+              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+              style={{ background: C.navy, color: "#fff" }}
+            >
+              <Flower2 size={18} />
+            </span>
+            <div className="min-w-0">
+              <div
+                className="text-base truncate"
+                style={{ color: C.navy, fontFamily: TYPOGRAPHY.headingFontFamily, fontWeight: 600 }}
+              >
+                {STORE.shortName}
+              </div>
+              <div
+                className="text-[10px] tracking-[.14em] uppercase"
+                style={{ color: C.slate }}
+              >
+                لوحة التحكم
+              </div>
+            </div>
+          </div>
         </div>
 
         <NavList />
