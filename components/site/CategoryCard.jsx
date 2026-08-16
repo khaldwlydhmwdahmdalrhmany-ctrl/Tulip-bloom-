@@ -1,53 +1,54 @@
 import React from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { C, SH } from "../../lib/colors.js";
+import { C } from "../../lib/colors.js";
 import { getIcon } from "../../lib/iconMap.js";
 
 /**
- * بطاقة تصنيف — البطاقة بالكامل قابلة للنقر (Link هو الجذر)
- * مع حركة hover: رفع + توهّج لوني + انزلاق السهم.
+ * بطاقة تصنيف — طراز بوتيك.
+ *
+ * أُعيد تصميمها: حد شعري بدل الظل الثقيل، ولون التصنيف يظهر
+ * كلمسة في الأيقونة والخط السفلي فقط لا كخلفية كاملة —
+ * ثمانية تصنيفات بثماني خلفيات ملوّنة تُنتج فوضى بصرية.
  */
-export default function CategoryCard({ category }) {
+export default function CategoryCard({ category, compact = false }) {
   const Icon = getIcon(category.icon);
-  const color = category.color || C.navy;
-  const count = category._count?.products ?? 0;
+  const tone = category.color || C.teal;
 
   return (
     <Link
       href={`/category/${category.slug}`}
-      className="group lift relative flex flex-col items-center text-center gap-3 p-5 sm:p-6 rounded-2xl overflow-hidden"
-      style={{ background: C.pearl, border: `1px solid ${C.line}`, boxShadow: SH.sm }}
+      className="card-boutique group relative overflow-hidden flex flex-col gap-3 p-6"
     >
-      {/* توهّج لوني يظهر عند المرور */}
+      {/* هالة لونية خفيفة تظهر عند المرور */}
       <span
-        className="absolute inset-x-0 top-0 h-24 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-        style={{ background: `radial-gradient(circle at 50% 0%, ${color}22, transparent 70%)` }}
+        className="absolute -top-12 -left-10 w-32 h-32 rounded-full blur-3xl opacity-0 group-hover:opacity-25 transition-opacity duration-500 pointer-events-none"
+        style={{ background: tone }}
       />
 
-      <div
-        className="relative w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110"
-        style={{ background: `${color}15`, border: `1px solid ${color}30` }}
+      <span
+        className="relative w-11 h-11 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110"
+        style={{ background: `${tone}14`, color: tone }}
       >
-        <Icon size={24} color={color} strokeWidth={1.8} />
-      </div>
+        <Icon size={20} />
+      </span>
 
-      <div className="relative">
-        <h3 className="font-bold text-[13px] sm:text-sm leading-snug" style={{ color: C.ink }}>
+      <div className="relative flex-1">
+        <h3 className="h-card font-display mb-1.5" style={{ color: C.navy }}>
           {category.name}
         </h3>
-        {count > 0 && (
-          <span className="block text-[11px] mt-1" style={{ color: C.slateLight }}>
-            {count} منتج
-          </span>
+        {!compact && category.tagline && (
+          <p className="text-[13px] leading-relaxed line-clamp-2" style={{ color: C.slate }}>
+            {category.tagline}
+          </p>
         )}
       </div>
 
       <span
-        className="relative inline-flex items-center gap-1 text-[11px] font-bold opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-        style={{ color }}
+        className="relative flex items-center gap-1.5 text-[11px] font-bold pt-3"
+        style={{ color: tone, borderTop: `1px solid ${C.lineSoft}` }}
       >
-        تصفّح <ArrowLeft size={12} className="arrow-slide" />
+        تصفّح القسم <ArrowLeft size={13} className="arrow-slide" />
       </span>
     </Link>
   );

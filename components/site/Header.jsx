@@ -1,117 +1,198 @@
 "use client";
+/**
+ * ═══════════════════════════════════════════════════════════
+ *  الهيدر
+ * ═══════════════════════════════════════════════════════════
+ *
+ *  ⚠️ أُعيد بناؤه لإصلاح خلل نواة: النسخة السابقة كانت تكتب
+ *  روابط التنقّل يدويًا داخل الملف — بما فيها «الصيانة الدورية»
+ *  و«طلب فني» و«صيانة عاجلة» — وتتجاهل `MODULES` تمامًا.
+ *  النتيجة أن إطفاء وحدة لا يُخفي روابطها من الشريط.
+ *
+ *  الآن: المصدر الوحيد هو `NAV_LINKS` في content.config.js،
+ *  وكل رابط يحمل `module` اختياريًا يُخفيه تلقائيًا عند الإطفاء.
+ *
+ *  التصميم: شريطان — شريط وعد رفيع فوق، ثم صفّ الهوية والتنقّل.
+ *  الروابط بخط النص والشعار بخط العناوين — التباين الطباعي هو
+ *  ما يعطي الإحساس بالبوتيك بدل شريط تنقّل عام.
+ */
+
 import React, { useState } from "react";
 import Link from "next/link";
-import { Menu, ShoppingCart, ChevronDown } from "lucide-react";
+import { Menu, X, ShoppingCart, ChevronDown, Search } from "lucide-react";
 import { C } from "../../lib/colors.js";
 import { getIcon } from "../../lib/iconMap.js";
+import { MODULES } from "../../config/store.config.js";
+import { NAV_LINKS, TOP_BAR } from "../../config/content.config.js";
 import StoreLogo from "./StoreLogo.jsx";
 import { useCart } from "../../context/CartContext.jsx";
 
-const NAV_LINKS = [
-  { to: "/", label: "الرئيسية" },
-  { to: "/offers", label: "العروض" },
-  { to: "/maintenance", label: "الصيانة الدورية" },
-  { to: "/maintenance/technician", label: "طلب فني" },
-  { to: "/maintenance/urgent", label: "صيانة عاجلة", urgent: true },
-  { to: "/about", label: "نبذة عنا" },
-  { to: "/contact", label: "تواصل معنا" },
-];
-
-export default function Header({ categories, settings = {} }) {
+export default function Header({ categories = [], settings = {} }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [catOpen, setCatOpen] = useState(false);
   const { cartCount, setCartOpen } = useCart();
 
+  // الوحدة المطفأة تُخفي رابطها — لا روابط ميتة ولا صفحات من مجال آخر
+  const links = NAV_LINKS.filter((l) => !l.module || MODULES[l.module]);
+  const main = links.filter((l) => !l.accent);
+  const accent = links.find((l) => l.accent);
+
   return (
-    <header className="sticky top-0 z-40 border-b" style={{ background: `${C.pearl}F5`, backdropFilter: "blur(8px)", borderColor: C.line }}>
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2">
+    <header className="sticky top-0 z-40" style={{ background: `${C.pearl}F2`, backdropFilter: "blur(10px)" }}>
 
-          <StoreLogo settings={settings} size={34} />
-        </Link>
+      {/* ══ شريط الوعد ══ */}
+      {TOP_BAR.enabled && (
+        <div className="text-center py-2 px-4" style={{ background: C.navy }}>
+          <p className="text-[11px] tracking-wide" style={{ color: "#ffffffDD" }}>
+            {TOP_BAR.message}
+          </p>
+        </div>
+      )}
 
-        <nav className="hidden lg:flex items-center gap-6 text-sm">
-          <Link href="/" className="font-medium" style={{ color: C.ink }}>الرئيسية</Link>
-          <div className="relative" onMouseEnter={() => setCatOpen(true)} onMouseLeave={() => setCatOpen(false)}>
-            <button className="flex items-center gap-1 text-sm font-medium" style={{ color: C.ink }}>
-              المنتجات <ChevronDown size={14} />
-            </button>
-            {catOpen && (
-              <div className="absolute top-full right-0 pt-2 w-64 z-50">
-                <div className="rounded-2xl overflow-hidden shadow-lg" style={{ background: C.pearl, border: `1px solid ${C.line}` }}>
-                  <Link href="/shop" className="block px-4 py-2.5 text-sm font-bold" style={{ color: C.navy, borderBottom: `1px solid ${C.line}` }}>
-                    كل المنتجات
-                  </Link>
-                  {categories.map((c) => {
-                    const Icon = getIcon(c.icon);
-                    return (
-                      <Link key={c.id} href={`/category/${c.slug}`} className="flex items-center gap-2 px-4 py-2.5 text-sm hover:opacity-70" style={{ color: C.ink }}>
-                        <Icon size={14} color={c.color} /> {c.name}
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-          <Link href="/offers" className="font-medium" style={{ color: C.ink }}>العروض</Link>
-          <Link href="/maintenance" className="font-medium" style={{ color: C.ink }}>الصيانة الدورية</Link>
-          <Link href="/maintenance/technician" className="font-medium" style={{ color: C.ink }}>طلب فني</Link>
-          <Link
-            href="/maintenance/urgent"
-            className="font-bold inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-colors"
-            style={{ color: C.danger, background: `${C.danger}0F` }}
-          >
-            <span className="w-1.5 h-1.5 rounded-full" style={{ background: C.danger }} />
-            صيانة عاجلة
+      <div className="border-b" style={{ borderColor: C.line }}>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-[4.5rem] flex items-center justify-between gap-4">
+
+          <Link href="/" className="flex items-center gap-2 shrink-0">
+            <StoreLogo settings={settings} size={36} />
           </Link>
-          <Link href="/about" className="font-medium" style={{ color: C.ink }}>نبذة عنا</Link>
-          <Link href="/contact" className="font-medium" style={{ color: C.ink }}>تواصل معنا</Link>
-        </nav>
 
-        <div className="flex items-center gap-2">
-          <button onClick={() => setCartOpen(true)} className="relative flex items-center gap-2 px-4 py-2 rounded-full font-bold text-sm" style={{ background: C.navy, color: C.pearl }} aria-label="عرض سلة الشراء">
-            <ShoppingCart size={17} />
-            <span className="hidden sm:inline">السلة</span>
-            {cartCount > 0 && (
-              <span className="absolute -top-2 -right-2 text-[11px] w-5 h-5 rounded-full flex items-center justify-center font-bold" style={{ background: C.teal, color: C.navyDeep }}>
-                {cartCount}
-              </span>
+          {/* ══ التنقّل — الشاشات الكبيرة ══ */}
+          <nav className="hidden lg:flex items-center gap-7 text-sm">
+            {/* التشكيلة — قائمة منسدلة */}
+            <div className="relative" onMouseEnter={() => setCatOpen(true)} onMouseLeave={() => setCatOpen(false)}>
+              <button
+                className="flex items-center gap-1.5 transition-opacity hover:opacity-60"
+                style={{ color: C.ink, fontWeight: 500 }}
+              >
+                التشكيلة <ChevronDown size={14} style={{ opacity: .6 }} />
+              </button>
+              {catOpen && (
+                <div className="absolute top-full right-0 pt-3 w-[22rem] z-50">
+                  <div className="rounded-2xl overflow-hidden p-2"
+                       style={{ background: "#fff", border: `1px solid ${C.line}`, boxShadow: "0 24px 56px -28px rgba(0,0,0,.28)" }}>
+                    <div className="grid grid-cols-2 gap-1">
+                      {categories.map((c) => {
+                        const Icon = getIcon(c.icon);
+                        return (
+                          <Link key={c.id} href={`/category/${c.slug}`}
+                                className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] transition-colors hover:bg-black/[.03]"
+                                style={{ color: C.ink }}>
+                            <Icon size={15} style={{ color: c.color || C.teal }} />
+                            <span className="truncate">{c.name}</span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                    <Link href="/shop"
+                          className="mt-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-[13px] font-bold"
+                          style={{ background: C.mintTint, color: C.navy }}>
+                      كل التشكيلة ({categories.length} أقسام)
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {main.map((l) => (
+              <Link key={l.to} href={l.to}
+                    className="transition-opacity hover:opacity-60"
+                    style={{ color: C.ink, fontWeight: 500 }}>
+                {l.label}
+              </Link>
+            ))}
+          </nav>
+
+          {/* ══ الإجراءات ══ */}
+          <div className="flex items-center gap-2 shrink-0">
+            {accent && (
+              <Link href={accent.to}
+                    className="hidden md:inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-bold transition-transform hover:-translate-y-0.5"
+                    style={{ background: C.mintTint, color: C.navy, border: `1px solid ${C.soft}` }}>
+                <Search size={14} /> {accent.label}
+              </Link>
             )}
-          </button>
-          <button className="lg:hidden p-2 rounded-lg" style={{ border: `1px solid ${C.line}` }} onClick={() => setMenuOpen((v) => !v)} aria-label="القائمة">
-            <Menu size={20} />
-          </button>
+
+            <button onClick={() => setCartOpen(true)}
+                    className="relative flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-[13px] transition-transform hover:-translate-y-0.5"
+                    style={{ background: C.navy, color: "#fff" }}
+                    aria-label="عرض سلة الشراء">
+              <ShoppingCart size={16} />
+              <span className="hidden sm:inline">السلة</span>
+              {cartCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold"
+                      style={{ background: C.teal, color: "#fff" }}>
+                  {cartCount}
+                </span>
+              )}
+            </button>
+
+            <button className="lg:hidden w-10 h-10 rounded-xl flex items-center justify-center"
+                    style={{ border: `1px solid ${C.line}`, color: C.navy }}
+                    onClick={() => setMenuOpen((v) => !v)}
+                    aria-label="القائمة">
+              {menuOpen ? <X size={19} /> : <Menu size={19} />}
+            </button>
+          </div>
         </div>
       </div>
 
+      {/* ══ القائمة — الجوال ══ */}
       {menuOpen && (
-        <div className="lg:hidden px-4 pb-4 flex flex-col gap-3 text-sm font-medium border-t" style={{ borderColor: C.line }}>
-          <Link href="/" onClick={() => setMenuOpen(false)} className="pt-3">الرئيسية</Link>
-          <Link href="/shop" onClick={() => setMenuOpen(false)}>كل المنتجات</Link>
-          {categories.map((c) => {
-            const Icon = getIcon(c.icon);
-            return (
-              <Link key={c.id} href={`/category/${c.slug}`} onClick={() => setMenuOpen(false)} className="flex items-center gap-2 pr-2" style={{ color: C.slate }}>
-                <Icon size={13} color={c.color} /> {c.name}
+        <div className="lg:hidden border-b max-h-[75vh] overflow-y-auto"
+             style={{ borderColor: C.line, background: "#fff" }}>
+          <div className="px-4 py-5 flex flex-col gap-5">
+
+            <div>
+              <p className="text-[10px] tracking-[.14em] uppercase font-bold mb-2.5" style={{ color: C.slateLight }}>
+                التشكيلة
+              </p>
+              <div className="grid grid-cols-2 gap-1.5">
+                {categories.map((c) => {
+                  const Icon = getIcon(c.icon);
+                  return (
+                    <Link key={c.id} href={`/category/${c.slug}`} onClick={() => setMenuOpen(false)}
+                          className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-[13px]"
+                          style={{ background: C.pearl, color: C.ink }}>
+                      <Icon size={14} style={{ color: c.color || C.teal }} />
+                      <span className="truncate">{c.name}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+              <Link href="/shop" onClick={() => setMenuOpen(false)}
+                    className="mt-1.5 flex items-center justify-center px-3 py-2.5 rounded-xl text-[13px] font-bold"
+                    style={{ background: C.mintTint, color: C.navy }}>
+                كل التشكيلة
               </Link>
-            );
-          })}
-          <Link href="/offers" onClick={() => setMenuOpen(false)}>العروض</Link>
-          <Link href="/maintenance" onClick={() => setMenuOpen(false)}>الصيانة الدورية</Link>
-          <Link href="/maintenance/technician" onClick={() => setMenuOpen(false)}>طلب فني صيانة</Link>
-          <Link
-            href="/maintenance/urgent"
-            onClick={() => setMenuOpen(false)}
-            className="inline-flex items-center gap-2 font-bold"
-            style={{ color: C.danger }}
-          >
-            <span className="w-1.5 h-1.5 rounded-full" style={{ background: C.danger }} />
-            صيانة عاجلة
-          </Link>
-          <Link href="/about" onClick={() => setMenuOpen(false)}>نبذة عن الشركة</Link>
-          <Link href="/faq" onClick={() => setMenuOpen(false)}>الأسئلة الشائعة</Link>
-          <Link href="/contact" onClick={() => setMenuOpen(false)}>تواصل معنا</Link>
+            </div>
+
+            <div>
+              <p className="text-[10px] tracking-[.14em] uppercase font-bold mb-2" style={{ color: C.slateLight }}>
+                الصفحات
+              </p>
+              <div className="flex flex-col">
+                {main.map((l) => (
+                  <Link key={l.to} href={l.to} onClick={() => setMenuOpen(false)}
+                        className="py-2.5 text-sm" style={{ color: C.ink }}>
+                    {l.label}
+                  </Link>
+                ))}
+                {MODULES.faq && (
+                  <Link href="/faq" onClick={() => setMenuOpen(false)} className="py-2.5 text-sm" style={{ color: C.ink }}>
+                    الأسئلة الشائعة
+                  </Link>
+                )}
+              </div>
+            </div>
+
+            {accent && (
+              <Link href={accent.to} onClick={() => setMenuOpen(false)}
+                    className="btn py-3 text-sm"
+                    style={{ background: C.navy, color: "#fff" }}>
+                <Search size={15} /> {accent.label}
+              </Link>
+            )}
+          </div>
         </div>
       )}
     </header>

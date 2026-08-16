@@ -40,26 +40,29 @@ export default function ContactForm() {
     window.open(buildWhatsAppLink(msg), "_blank");
   };
 
-  const field = "w-full mt-1.5 px-4 py-3 rounded-xl text-sm outline-none transition-shadow";
-  const fieldStyle = { border: `1.5px solid ${C.line}`, background: "#fff" };
+  const field =
+    "w-full mt-2 px-4 py-3.5 rounded-xl text-sm outline-none transition-colors " +
+    "focus:border-[color:var(--c-accent)]";
+  const fieldStyle = { border: `1px solid ${C.line}`, background: C.pearl };
 
   return (
-    <div className="p-6 sm:p-8 rounded-3xl" style={{ background: "#fff", border: `1px solid ${C.line}` }}>
-      <h2 className="h-card font-display mb-1" style={{ color: C.navy }}>أرسل لنا رسالة</h2>
-      <p className="text-sm mb-6" style={{ color: C.slate }}>
-        نرد عادة خلال دقائق في أوقات العمل.
+    <div className="p-6 sm:p-9 rounded-3xl" style={{ background: "#fff", border: `1px solid ${C.line}` }}>
+      <span className="eyebrow mb-3">راسلنا</span>
+      <h2 className="h-section font-display mb-2" style={{ color: C.navy }}>كيف نساعدك؟</h2>
+      <p className="text-sm mb-7 leading-relaxed" style={{ color: C.slate }}>
+        اكتب المناسبة والميزانية والحي، ونرجع لك بخيارات بالصور خلال دقائق.
       </p>
 
       <div className="flex flex-col gap-4">
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
-            <label className="text-xs font-bold flex items-center gap-1.5" style={{ color: C.navy }}>
+            <label className="text-[10px] font-bold tracking-[.14em] uppercase flex items-center gap-1.5" style={{ color: C.slateLight }}>
               <User size={13} /> الاسم *
             </label>
             <input value={form.name} onChange={set("name")} placeholder="اسمك الكريم" className={field} style={fieldStyle} />
           </div>
           <div>
-            <label className="text-xs font-bold flex items-center gap-1.5" style={{ color: C.navy }}>
+            <label className="text-[10px] font-bold tracking-[.14em] uppercase flex items-center gap-1.5" style={{ color: C.slateLight }}>
               <Phone size={13} /> رقم الجوال *
             </label>
             <input
@@ -76,8 +79,8 @@ export default function ContactForm() {
         </div>
 
         <div>
-          <label className="text-xs font-bold flex items-center gap-1.5" style={{ color: C.navy }}>
-            <Tag size={13} /> نوع الطلب
+          <label className="text-[10px] font-bold tracking-[.14em] uppercase flex items-center gap-1.5" style={{ color: C.slateLight }}>
+            <Tag size={12} /> نوع الطلب
           </label>
           <select value={form.type} onChange={set("type")} className={field} style={fieldStyle}>
             {REQUEST_TYPES.map((t) => (<option key={t} value={t}>{t}</option>))}
@@ -85,7 +88,7 @@ export default function ContactForm() {
         </div>
 
         <div>
-          <label className="text-xs font-bold flex items-center gap-1.5" style={{ color: C.navy }}>
+          <label className="text-[10px] font-bold tracking-[.14em] uppercase flex items-center gap-1.5" style={{ color: C.slateLight }}>
             <MessageSquare size={13} /> الرسالة
           </label>
           <textarea
@@ -104,8 +107,8 @@ export default function ContactForm() {
           </p>
         )}
 
-        <button onClick={submit} className="btn w-full py-3.5 text-sm" style={{ background: C.navy, color: "#fff" }}>
-          <Send size={16} /> إرسال عبر واتساب
+        <button onClick={submit} className="btn w-full py-4 text-sm mt-1" style={{ background: C.navy, color: "#fff" }}>
+          <Send size={16} /> أرسل عبر واتساب
         </button>
 
         <p className="text-[11px] text-center" style={{ color: C.slateLight }}>

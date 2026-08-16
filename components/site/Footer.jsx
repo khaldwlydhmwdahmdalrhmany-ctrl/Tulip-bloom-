@@ -4,9 +4,11 @@ import { Phone, MapPin, MessageCircle, Mail, Clock } from "lucide-react";
 import { C } from "../../lib/colors.js";
 import StoreLogo from "./StoreLogo.jsx";
 import SocialLinks from "./SocialLinks.jsx";
-import { STORE } from "../../config/store.config.js";
+import { STORE, MODULES } from "../../config/store.config.js";
+import { NAV_LINKS } from "../../config/content.config.js";
 
 export default function Footer({ settings = {}, legalPages = [] }) {
+  const navLinks = NAV_LINKS.filter((l) => !l.module || MODULES[l.module]);
   const phone = settings.contact_phone || "+966 53 254 0595";
   const address = settings.contact_address || "المملكة العربية السعودية";
   const email = settings.contact_email;
@@ -32,17 +34,25 @@ export default function Footer({ settings = {}, legalPages = [] }) {
           <ul className="space-y-2 text-sm" style={{ color: dim }}>
             <li><Link href="/" className="hover:underline">الرئيسية</Link></li>
             <li><Link href="/shop" className="hover:underline">المنتجات</Link></li>
+            <li><Link href="/occasions" className="hover:underline">تسوّق حسب المناسبة</Link></li>
             <li><Link href="/offers" className="hover:underline">العروض</Link></li>
-            <li><Link href="/about" className="hover:underline">نبذة عن الشركة</Link></li>
+            <li><Link href="/about" className="hover:underline">نبذة عنا</Link></li>
           </ul>
         </div>
 
         <div>
-          <h4 className="font-bold mb-3 text-sm">الدعم والصيانة</h4>
+          {/*
+            ⚠️ إصلاح خلل نواة: كان هذا العمود يسرد روابط الصيانة الثلاثة
+            حرفيًا ويتجاهل MODULES — فتظهر في متجر لا علاقة له بالصيانة.
+            الآن يقرأ من NAV_LINKS المفلترة بالوحدات.
+          */}
+          <h4 className="font-bold mb-3 text-sm">المساعدة</h4>
           <ul className="space-y-2 text-sm" style={{ color: dim }}>
-            <li><Link href="/maintenance" className="hover:underline">الصيانة الدورية</Link></li>
-            <li><Link href="/maintenance/technician" className="hover:underline">طلب فني صيانة</Link></li>
-            <li><Link href="/maintenance/urgent" className="hover:underline">صيانة عاجلة</Link></li>
+            {navLinks.filter((l) => !["/", "/offers", "/about"].includes(l.to)).map((l) => (
+              <li key={l.to}>
+                <Link href={l.to} className="hover:underline">{l.label}</Link>
+              </li>
+            ))}
             <li><Link href="/faq" className="hover:underline">الأسئلة الشائعة</Link></li>
             <li><Link href="/privacy" className="hover:underline">سياسة الخصوصية</Link></li>
             {legalPages.map((p) => (

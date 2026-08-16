@@ -20,6 +20,7 @@ import { getRatioCss } from "../../lib/banners.js";
 export default function PageHero({
   title,
   subtitle,
+  eyebrow,        // ⭐ مضاف — سطر تحريري فوق العنوان
   imageUrl,
   ratio = "auto",
   icon,
@@ -94,7 +95,7 @@ export default function PageHero({
     <section
       className="relative w-full overflow-hidden"
       style={{
-        background: hasImage ? C.navyDeep : `linear-gradient(120deg, ${color}, ${C.navyDeep})`,
+        background: hasImage ? C.navyDeep : `linear-gradient(135deg, ${C.navyDeep} 0%, ${color} 62%, ${C.navyDeep} 100%)`,
         ...(hasImage && ratioCss ? { aspectRatio: ratioCss, minHeight: 220 } : {}),
       }}
     >
@@ -108,35 +109,50 @@ export default function PageHero({
       )}
 
       {!hasImage && (
-        <span className="absolute -top-32 -left-24 w-96 h-96 rounded-full blur-3xl opacity-20 pointer-events-none"
-              style={{ background: C.teal }} />
+        <>
+          <span className="absolute -top-32 -left-24 w-96 h-96 rounded-full blur-3xl opacity-[0.18] pointer-events-none"
+                style={{ background: C.teal }} />
+          <span className="absolute -bottom-40 -right-20 w-[26rem] h-[26rem] rounded-full blur-3xl opacity-[0.12] pointer-events-none"
+                style={{ background: C.soft }} />
+        </>
       )}
 
       <div
         className={`relative max-w-6xl mx-auto px-4 sm:px-6 ${compact ? "py-12 sm:py-16" : "py-16 sm:py-24"}`}
         style={hasImage && ratioCss ? { position: "absolute", inset: 0, display: "flex", alignItems: "center" } : {}}
       >
-        <div className="flex items-start gap-4 max-w-2xl">
-          {!hasImage && (
-            <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 mt-1"
-                 style={{ background: "rgba(255,255,255,0.15)" }}>
-              <Icon size={26} color="#fff" strokeWidth={1.8} />
-            </div>
+        {/*
+          ⚠️ أُزيلت شارة الأيقونة المربّعة. كانت تعرض أيقونة التصنيف
+          (Droplet مثلًا) فوق كل ترويسة — وفي متجر ورد تظهر قطرة ماء
+          فوق «نبذة عن توليب بلوم». الأيقونة الآن للتصنيفات فقط،
+          كعنصر رفيع بجانب السطر التحريري لا كمربّع بارز.
+        */}
+        <div className="flex flex-col gap-4 max-w-3xl">
+          {eyebrow && (
+            <span className="inline-flex items-center gap-2.5 text-[11px] font-bold tracking-[.16em] uppercase"
+                  style={{ color: "rgba(255,255,255,.72)" }}>
+              <span className="w-7 h-px" style={{ background: "rgba(255,255,255,.45)" }} />
+              {icon && <Icon size={13} strokeWidth={2} />}
+              {eyebrow}
+            </span>
           )}
 
-          <div className="flex flex-col gap-3">
-            <h1 className="h-display font-display" style={{ color: "#fff" }}>{title}</h1>
-            {subtitle && (
-              <p className="text-sm sm:text-lg leading-relaxed" style={{ color: "rgba(255,255,255,.82)" }}>{subtitle}</p>
-            )}
-            {typeof count === "number" && (
-              <span className="inline-block w-fit text-xs font-bold px-3 py-1.5 rounded-full"
-                    style={{ background: "rgba(255,255,255,0.15)", color: "#fff" }}>
-                {count} منتج
-              </span>
-            )}
-            {actions}
-          </div>
+          <h1 className="h-display font-display" style={{ color: "#fff" }}>{title}</h1>
+
+          {subtitle && (
+            <p className="text-sm sm:text-lg leading-loose max-w-xl"
+               style={{ color: "rgba(255,255,255,.78)" }}>
+              {subtitle}
+            </p>
+          )}
+
+          {typeof count === "number" && (
+            <span className="num inline-block w-fit text-xs font-bold px-3.5 py-1.5 rounded-lg"
+                  style={{ background: "rgba(255,255,255,0.14)", color: "#fff" }}>
+              {count} منتج
+            </span>
+          )}
+          {actions}
         </div>
       </div>
     </section>

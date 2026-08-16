@@ -16,7 +16,7 @@ import { trackSearch, trackSearchNoResults, trackFilterUse, trackViewItemList } 
 const PAGE_SIZE = 24;
 
 const SORTS = [
-  { key: "relevant", label: "الأكثر ملاءمة" },
+  { key: "relevant", label: "المختارة لك" },
   { key: "price_asc", label: "السعر: من الأقل" },
   { key: "price_desc", label: "السعر: من الأعلى" },
   { key: "discount", label: "أعلى خصم" },
@@ -25,7 +25,12 @@ const SORTS = [
 
 // اقتراحات بحث تتغيّر حسب القسم — أوضح من "ابحث عن منتج..."
 /** نص مربّع البحث — عام يناسب أي مجال. */
-const SEARCH_PLACEHOLDER = "ابحث بالاسم أو الوصف أو الماركة...";
+/**
+ * ⚠️ حقل `brand` يحمل هنا نوع الزهرة لا ماركة تجارية — لا ماركات
+ * في متجر ورد. النصوص تعكس ذلك: «نوع الزهرة» لا «الماركة».
+ */
+const SEARCH_PLACEHOLDER = "ابحث عن باقة، مناسبة، أو نوع زهرة…";
+const BRAND_LABEL = "نوع الزهرة";
 
 export default function ProductBrowser({ categories, products, activeCatSlug }) {
   const [query, setQuery] = useState("");
@@ -122,8 +127,10 @@ export default function ProductBrowser({ categories, products, activeCatSlug }) 
       <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1 mb-5">
         <Link
           href="/shop"
-          className="shrink-0 px-4 py-2 rounded-full text-sm font-bold transition-colors"
-          style={!activeCatSlug ? { background: C.navy, color: "#fff" } : { background: "#fff", color: C.navy, border: `1.5px solid ${C.line}` }}
+          className="shrink-0 px-4 py-2.5 rounded-xl text-[13px] transition-all"
+          style={!activeCatSlug
+            ? { background: C.navy, color: "#fff", fontWeight: 700 }
+            : { background: "#fff", color: C.slate, border: `1px solid ${C.line}`, fontWeight: 500 }}
         >
           الكل
         </Link>
@@ -134,10 +141,12 @@ export default function ProductBrowser({ categories, products, activeCatSlug }) 
             <Link
               key={c.id}
               href={`/category/${c.slug}`}
-              className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold transition-colors"
-              style={on ? { background: c.color, color: "#fff" } : { background: "#fff", color: c.color, border: `1.5px solid ${C.line}` }}
+              className="shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] transition-all"
+              style={on
+                ? { background: C.navy, color: "#fff", fontWeight: 700 }
+                : { background: "#fff", color: C.slate, border: `1px solid ${C.line}`, fontWeight: 500 }}
             >
-              <Icon size={14} /> {c.name}
+              <Icon size={14} style={{ color: on ? "#fff" : (c.color || C.teal) }} /> {c.name}
             </Link>
           );
         })}
@@ -146,14 +155,14 @@ export default function ProductBrowser({ categories, products, activeCatSlug }) 
       {/* شريط البحث + الفرز + الفلترة */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1">
-          <Search size={17} className="absolute top-1/2 -translate-y-1/2 right-3.5 pointer-events-none" color={C.teal} />
+          <Search size={16} className="absolute top-1/2 -translate-y-1/2 right-4 pointer-events-none" color={C.slateLight} />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={placeholder}
             aria-label="بحث في المنتجات"
-            className="w-full pr-11 pl-10 py-3 rounded-full text-sm outline-none transition-shadow"
-            style={{ border: `1.5px solid ${C.line}`, background: "#fff" }}
+            className="w-full pr-11 pl-10 py-3.5 rounded-xl text-sm outline-none transition-colors focus:border-[color:var(--c-accent)]"
+            style={{ border: `1px solid ${C.line}`, background: "#fff" }}
           />
           {query && (
             <button
@@ -169,13 +178,13 @@ export default function ProductBrowser({ categories, products, activeCatSlug }) 
 
         <div className="flex gap-2">
           <div className="relative flex-1 sm:flex-none">
-            <ArrowUpDown size={15} className="absolute top-1/2 -translate-y-1/2 right-3.5 pointer-events-none" color={C.navy} />
+            <ArrowUpDown size={14} className="absolute top-1/2 -translate-y-1/2 right-3.5 pointer-events-none" color={C.slateLight} />
             <select
               value={sort}
               onChange={(e) => { setSort(e.target.value); trackFilterUse("sort", e.target.value); }}
               aria-label="ترتيب المنتجات"
-              className="w-full sm:w-auto appearance-none pr-10 pl-4 py-3 rounded-full text-sm font-bold outline-none cursor-pointer"
-              style={{ border: `1.5px solid ${C.line}`, background: "#fff", color: C.navy }}
+              className="w-full sm:w-auto appearance-none pr-10 pl-4 py-3.5 rounded-xl text-[13px] font-bold outline-none cursor-pointer"
+              style={{ border: `1px solid ${C.line}`, background: "#fff", color: C.navy }}
             >
               {SORTS.map((s) => (<option key={s.key} value={s.key}>{s.label}</option>))}
             </select>
@@ -184,10 +193,10 @@ export default function ProductBrowser({ categories, products, activeCatSlug }) 
           {hasFilters && (
             <button
               onClick={() => setPanelOpen((v) => !v)}
-              className="relative flex items-center gap-2 px-5 py-3 rounded-full text-sm font-bold shrink-0"
-              style={panelOpen ? { background: C.navy, color: "#fff" } : { border: `1.5px solid ${C.line}`, background: "#fff", color: C.navy }}
+              className="relative flex items-center gap-2 px-5 py-3.5 rounded-xl text-[13px] font-bold shrink-0 transition-colors"
+              style={panelOpen ? { background: C.navy, color: "#fff" } : { border: `1px solid ${C.line}`, background: "#fff", color: C.navy }}
             >
-              <SlidersHorizontal size={15} /> فلترة
+              <SlidersHorizontal size={14} /> تصفية
               {activeCount > 0 && (
                 <span className="w-5 h-5 rounded-full text-[10px] flex items-center justify-center" style={{ background: C.teal, color: "#fff" }}>
                   {activeCount}
@@ -200,11 +209,11 @@ export default function ProductBrowser({ categories, products, activeCatSlug }) 
 
       {/* لوحة الفلاتر */}
       {panelOpen && hasFilters && (
-        <div className="rise p-5 rounded-2xl mb-6 grid sm:grid-cols-3 gap-6" style={{ background: "#fff", border: `1px solid ${C.line}`, boxShadow: SH.md }}>
+        <div className="rise p-6 rounded-2xl mb-6 grid sm:grid-cols-3 gap-7" style={{ background: C.pearl, border: `1px solid ${C.line}` }}>
           {/* السعر */}
           {priceBounds.max > priceBounds.min && (
             <div>
-              <h4 className="font-bold text-xs mb-3" style={{ color: C.navy }}>السعر الأقصى</h4>
+              <h4 className="text-[10px] font-bold mb-3 tracking-[.14em] uppercase" style={{ color: C.slateLight }}>الحد الأعلى للسعر</h4>
               <input
                 type="range"
                 min={priceBounds.min}
@@ -225,7 +234,7 @@ export default function ProductBrowser({ categories, products, activeCatSlug }) 
           {/* الماركة */}
           {availableBrands.length > 0 && (
             <div>
-              <h4 className="font-bold text-xs mb-3" style={{ color: C.navy }}>الماركة</h4>
+              <h4 className="text-[10px] font-bold mb-3 tracking-[.14em] uppercase" style={{ color: C.slateLight }}>{BRAND_LABEL}</h4>
               <div className="flex flex-wrap gap-2">
                 {availableBrands.map((b) => {
                   const on = brands.includes(b);
@@ -247,7 +256,7 @@ export default function ProductBrowser({ categories, products, activeCatSlug }) 
           {/* التوفر */}
           {availableStocks.length > 1 && (
             <div>
-              <h4 className="font-bold text-xs mb-3" style={{ color: C.navy }}>التوفر</h4>
+              <h4 className="text-[10px] font-bold mb-3 tracking-[.14em] uppercase" style={{ color: C.slateLight }}>التوفر</h4>
               <div className="flex flex-wrap gap-2">
                 {availableStocks.map((s) => {
                   const on = stocks.includes(s);
