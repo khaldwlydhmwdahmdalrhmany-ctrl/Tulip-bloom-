@@ -20,9 +20,9 @@ export default async function FAQPage() {
         ratio={pageBanner?.ratio}
         bannerCta={pageBanner?.ctaHref ? { label: pageBanner.ctaLabel, href: pageBanner.ctaHref } : undefined}
         title="الأسئلة الشائعة"
-        subtitle="كل ما تحتاج معرفته عن الطلب والشحن والضمان."
+        subtitle="كل ما تحتاج معرفته عن الطلب والتوصيل والعناية بالورد."
+        eyebrow="مركز المساعدة"
         icon="Headset"
-        color={C.cyan}
         compact
       />
 

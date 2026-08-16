@@ -30,7 +30,8 @@ export default async function AboutPage() {
         imageUrl={pageBanner?.imageUrl}
         ratio={pageBanner?.ratio}
         bannerCta={pageBanner?.ctaHref ? { label: pageBanner.ctaLabel, href: pageBanner.ctaHref } : undefined}
-        icon="Droplet"
+        eyebrow="من نحن"
+        icon="Sparkles"
         color={C.navy}
       />
 

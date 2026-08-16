@@ -41,6 +41,7 @@ export default async function ContactPage() {
         bannerCta={pageBanner?.ctaHref ? { label: pageBanner.ctaLabel, href: pageBanner.ctaHref } : undefined}
         title="تواصل معنا"
         subtitle="سؤال عن منتج أو طلب — فريقنا جاهز."
+        eyebrow="تواصل معنا"
         icon="Headset"
         color={C.navy}
         whatsapp={`السلام عليكم، أرغب في التواصل مع فريق ${STORE.shortName}.`}
