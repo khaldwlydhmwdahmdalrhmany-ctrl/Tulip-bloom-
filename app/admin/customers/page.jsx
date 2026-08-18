@@ -1,36 +1,24 @@
 import React from "react";
-import { listCustomers, ordersForCustomer } from "../../../lib/customerDb.js";
+import { buildContacts, crmOverview, SEGMENTS, dueTasks } from "../../../lib/crmDb.js";
 import { themeColors, TYPOGRAPHY } from "../../../config/theme.config.js";
-import CustomersBoard from "../../../components/CustomersBoard.jsx";
+import CrmBoard from "../../../components/CrmBoard.jsx";
+import { STORE } from "../../../config/store.config.js";
 
 export const dynamic = "force-dynamic";
-
 const T = themeColors();
 
 export default async function AdminCustomersPage() {
-  const customers = await listCustomers({ limit: 300 });
+  const contacts = await buildContacts().catch(() => []);
+  const overview = crmOverview(contacts);
+  const tasks = await dueTasks({ limit: 20 }).catch(() => []);
 
-  // إحصاءات كل عميل — تُحسب مرة على الخادم لا في المتصفح
-  const enriched = await Promise.all(
-    customers.map(async (c) => {
-      const orders = await ordersForCustomer(c.id).catch(() => []);
-      const total = orders.reduce((s, o) => s + Number(o.total || 0), 0);
-      return {
-        id: c.id,
-        email: c.email,
-        name: c.name || "",
-        phone: c.phone || "",
-        status: c.status || "active",
-        emailVerified: !!c.emailVerified,
-        marketingOptIn: !!c.marketingOptIn,
-        createdAt: c.createdAt,
-        lastLoginAt: c.lastLoginAt,
-        orderCount: orders.length,
-        lifetimeValue: Math.round(total),
-        // ⚠️ passwordHash لا يُمرَّر إطلاقًا
-      };
-    })
-  );
+  // نُمرّر ما يلزم العرض فقط — الطلبات الكاملة تُقرأ في صفحة التفاصيل
+  const slim = contacts.map((c) => ({
+    key: c.key, name: c.name, phone: c.phone, email: c.email,
+    registered: c.registered, status: c.status,
+    orderCount: c.orderCount, lifetimeValue: c.lifetimeValue, avgOrder: c.avgOrder,
+    lastOrderAt: c.lastOrderAt, segments: c.segments, tags: c.tags,
+  }));
 
   return (
     <div className="flex flex-col gap-6">
@@ -39,10 +27,20 @@ export default async function AdminCustomersPage() {
           العملاء
         </h1>
         <p className="text-xs" style={{ color: T.muted }}>
-          حسابات مسجّلة في المتجر. الطلبات كضيف لا تظهر هنا.
+          الحسابات المسجّلة والضيوف معًا — مدموجين بالجوال.
         </p>
       </div>
-      <CustomersBoard customers={enriched} />
+
+      <CrmBoard
+        contacts={slim}
+        overview={overview}
+        segments={SEGMENTS}
+        tasks={tasks.map((t) => ({
+          id: t.id, title: t.title, contactKey: t.contactKey,
+          dueAt: t.dueAt, done: t.done === true || t.done === 1,
+        }))}
+        currency={STORE.currencyLabel}
+      />
     </div>
   );
 }

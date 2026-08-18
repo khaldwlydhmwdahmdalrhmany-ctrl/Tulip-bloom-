@@ -1,9 +1,14 @@
 import React from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Package, CalendarHeart, MapPin, ArrowLeft, Sparkles } from "lucide-react";
+import { Package, CalendarHeart, MapPin, ArrowLeft, Sparkles, Heart, Percent } from "lucide-react";
 import { getCurrentCustomer } from "../../../lib/customerSession.js";
-import { ordersForCustomer, upcomingReminders, listAddresses, listRecipients } from "../../../lib/customerDb.js";
+import {
+  ordersForCustomer, upcomingReminders, listAddresses, listRecipients, listFavoriteIds,
+} from "../../../lib/customerDb.js";
+import { getProducts } from "../../../lib/queries.js";
+import { recommendProducts, personalizedOffers } from "../../../lib/recommend.js";
+import ProductCard from "../../../components/site/ProductCard.jsx";
 import { C, formatPrice } from "../../../lib/colors.js";
 
 export const dynamic = "force-dynamic";
@@ -15,20 +20,26 @@ export default async function AccountHome() {
   const me = await getCurrentCustomer();
   if (!me) redirect("/account/login");
 
-  const [orders, reminders, addresses, recipients] = await Promise.all([
+  const [orders, reminders, addresses, recipients, favoriteIds, products] = await Promise.all([
     ordersForCustomer(me.id),
     upcomingReminders(me.id, 60),
     listAddresses(me.id),
     listRecipients(me.id),
+    listFavoriteIds(me.id),
+    getProducts(),
   ]);
+
+  // كل توصية تحمل سببها — انظر lib/recommend.js
+  const picks = recommendProducts({ products, favoriteIds, orders, reminders, limit: 6 });
+  const offers = personalizedOffers({ products, favoriteIds, orders, limit: 3 });
 
   const spent = orders.reduce((s, o) => s + Number(o.total || 0), 0);
 
   const stats = [
     { label: "الطلبات", value: orders.length, icon: Package, href: "/account/orders" },
     { label: "إجمالي الشراء", value: `${formatPrice(Math.round(spent))} ر.س`, icon: Sparkles },
+    { label: "المفضّلة", value: favoriteIds.length, icon: Heart, href: "/account/favorites" },
     { label: "المستلمون", value: recipients.length, icon: CalendarHeart, href: "/account/recipients" },
-    { label: "العناوين", value: addresses.length, icon: MapPin, href: "/account/addresses" },
   ];
 
   return (
@@ -94,6 +105,67 @@ export default async function AccountHome() {
             : <div key={s.label}>{Inner}</div>;
         })}
       </div>
+
+      {/* ── مقترح لك ── */}
+      {picks.length > 0 && (
+        <section>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-[10px] font-bold tracking-[.14em] uppercase" style={{ color: C.slateLight }}>
+              مقترح لك
+            </h2>
+            <Link href="/shop" className="text-[12px] font-bold flex items-center gap-1" style={{ color: C.teal }}>
+              كل التشكيلة <ArrowLeft size={13} />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            {picks.map(({ product, reason, tone }) => (
+              <div key={product.id} className="flex flex-col gap-2">
+                <ProductCard product={product} />
+                {/* السبب تحت البطاقة لا داخلها — لا نعدّل ProductCard */}
+                <p className="text-[11px] leading-snug px-1 flex items-start gap-1.5"
+                   style={{ color: tone === "urgent" ? C.danger : C.slate }}>
+                  <Sparkles size={11} className="shrink-0 mt-0.5" style={{ color: tone === "urgent" ? C.danger : C.teal }} />
+                  {reason}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ── عروض تهمّك ── */}
+      {offers.length > 0 && (
+        <section>
+          <h2 className="text-[10px] font-bold mb-3 tracking-[.14em] uppercase" style={{ color: C.slateLight }}>
+            عروض تهمّك
+          </h2>
+          <div className="flex flex-col gap-2">
+            {offers.map(({ product, disc, onFavorite }) => (
+              <Link key={product.id} href={`/product/${product.id}`}
+                    className="flex items-center gap-3 p-4 rounded-2xl"
+                    style={{ background: "#fff", border: `1px solid ${C.line}` }}>
+                <span className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                      style={{ background: `${C.danger}12`, color: C.danger }}>
+                  <Percent size={16} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-bold truncate" style={{ color: C.navy }}>{product.name}</p>
+                  <p className="text-[11px]" style={{ color: C.slate }}>
+                    {onFavorite ? "من مفضّلتك · " : ""}خصم {disc}٪
+                  </p>
+                </div>
+                <div className="text-left shrink-0">
+                  <p className="num text-sm font-bold" style={{ color: C.navy }}>{formatPrice(product.price)} ر.س</p>
+                  <p className="num text-[11px] line-through" style={{ color: C.slateLight }}>
+                    {formatPrice(product.oldPrice)}
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ── آخر الطلبات ── */}
       <section>

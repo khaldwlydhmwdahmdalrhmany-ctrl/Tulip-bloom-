@@ -3,6 +3,9 @@ import { createOrder } from "../../../lib/db.js";
 import { rateLimit, clientIp } from "../../../lib/rateLimit.js";
 import { getCurrentCustomer } from "../../../lib/customerSession.js";
 import { attachOrderToCustomer } from "../../../lib/customerDb.js";
+import { findCouponByCode, couponUsesBy, redeemCoupon, markCartRecovered } from "../../../lib/marketingDb.js";
+import { evaluateCoupon, computeTotals } from "../../../lib/coupon.js";
+import { getProducts } from "../../../lib/queries.js";
 
 export const dynamic = "force-dynamic";
 
@@ -51,6 +54,45 @@ export async function POST(request) {
     return NextResponse.json({ error: "رقم الجوال غير صحيح" }, { status: 400 });
   }
 
+  /**
+   * ══ إعادة التحقّق من الكوبون على الخادم ══
+   *
+   * ⚠️ قاعدة غير قابلة للتفاوض: لا نثق بأي مبلغ خصم قادم من
+   * المتصفح. نُعيد جلب الكوبون وأسعار المنتجات من القاعدة
+   * ونحسب الخصم من الصفر. من يعدّل الطلب من أدوات المطوّر
+   * يحصل على السعر الصحيح لا على ما كتبه.
+   *
+   * فشل التحقّق لا يُفشل الطلب — يُلغى الخصم ويمرّ الطلب بسعره
+   * الكامل. خسارة خصم أهون من خسارة طلب.
+   */
+  let appliedCoupon = null;
+  let discount = 0;
+  let serverTotal = numTotal;
+
+  if (body.couponCode) {
+    try {
+      const coupon = await findCouponByCode(body.couponCode);
+      if (coupon) {
+        const catalog = await getProducts();
+        const priced = items
+          .map((i) => {
+            const p = catalog.find((x) => x.id === i.id);
+            return p ? { id: p.id, qty: Math.max(1, Number(i.qty) || 1), price: Number(p.price), categorySlug: p.categorySlug } : null;
+          })
+          .filter(Boolean);
+        const subtotal = priced.reduce((s, i) => s + i.price * i.qty, 0);
+        const uses = await couponUsesBy({ couponId: coupon.id, phone: customerPhone });
+        const res = evaluateCoupon(coupon, { subtotal, items: priced, customerUses: uses });
+        if (res.ok) {
+          const totals = computeTotals({ subtotal, discount: res.discount, freeShipping: res.freeShipping });
+          appliedCoupon = coupon;
+          discount = totals.discount;
+          serverTotal = totals.total;
+        }
+      }
+    } catch { /* الخصم يسقط، الطلب يمرّ */ }
+  }
+
   try {
     const order = await createOrder({
       customerName: cap(customerName, 120),
@@ -62,7 +104,10 @@ export async function POST(request) {
         qty: Math.max(1, Math.min(999, Number(i.qty) || 1)),
         price: Math.max(0, Number(i.price) || 0),
       })),
-      total: numTotal,
+      // الإجمالي من حساب الخادم لا من العميل
+      total: serverTotal,
+      couponCode: appliedCoupon ? appliedCoupon.code : null,
+      discount,
       // بيانات الإسناد التسويقي — نصوص قصيرة فقط
       source: cap(body.source, 60),
       medium: cap(body.medium, 40),
@@ -81,6 +126,19 @@ export async function POST(request) {
       const me = await getCurrentCustomer();
       if (me) await attachOrderToCustomer(order.id, me.id);
     } catch { /* الطلب نجح — الربط تفصيل ثانوي */ }
+
+    // آثار تسويقية جانبية — كلها صامتة، لا شيء منها يُفشل الطلب
+    try {
+      if (appliedCoupon) {
+        await redeemCoupon({
+          couponId: appliedCoupon.id, orderId: order.id,
+          phone: customerPhone, amount: discount,
+        });
+      }
+    } catch {}
+    try {
+      if (body.sessionId) await markCartRecovered(String(body.sessionId).slice(0, 64), order.id);
+    } catch {}
 
     return NextResponse.json(order, { status: 201 });
   } catch (err) {

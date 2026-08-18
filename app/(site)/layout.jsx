@@ -1,6 +1,7 @@
 import React from "react";
 import { getCategories, getProductIndex, getSettings, getLegalPages } from "../../lib/queries.js";
 import { CartProvider } from "../../context/CartContext.jsx";
+import { FavoritesProvider } from "../../context/FavoritesContext.jsx";
 import Ticker, { AnnouncementBar } from "../../components/site/Ticker.jsx";
 import Header from "../../components/site/Header.jsx";
 import Footer from "../../components/site/Footer.jsx";
@@ -19,6 +20,7 @@ export default async function SiteLayout({ children }) {
 
   return (
     <CartProvider allProducts={productIndex}>
+      <FavoritesProvider>
       <AnnouncementBar settings={settings} />
       <Ticker settings={settings} />
       <Header categories={categories} settings={settings} />
@@ -26,6 +28,7 @@ export default async function SiteLayout({ children }) {
       <Footer settings={settings} legalPages={legalPages} />
       <CartDrawer />
       <VisitTracker />
+      </FavoritesProvider>
     </CartProvider>
   );
 }
