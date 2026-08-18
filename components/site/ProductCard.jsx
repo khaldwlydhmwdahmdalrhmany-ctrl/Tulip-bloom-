@@ -9,6 +9,7 @@ import Rating from "./Rating.jsx";
 import StockBadge from "./StockBadge.jsx";
 import { useCart } from "../../context/CartContext.jsx";
 import { CARD_LABELS } from "../../config/content.config.js";
+import FavoriteButton from "./FavoriteButton.jsx";
 
 export default function ProductCard({ product }) {
   const { addToCart } = useCart();
@@ -26,9 +27,13 @@ export default function ProductCard({ product }) {
 
   return (
     <article
-      className="lift group flex flex-col rounded-2xl overflow-hidden h-full"
+      className="lift group relative flex flex-col rounded-2xl overflow-hidden h-full"
       style={{ background: "#fff", border: `1px solid ${C.line}`, boxShadow: SH.sm }}
     >
+      {/* خارج <Link> عمدًا: زر داخل رابط HTML غير صالح، والمتصفح
+          يفكّ التداخل فيكسر التخطيط. الموضع مطلق نسبةً للبطاقة. */}
+      <FavoriteButton productId={product.id} floating />
+
       <Link href={`/product/${product.id}`} className="zoom-wrap block relative">
         <ProductVisual product={product} />
         {soldOut && (

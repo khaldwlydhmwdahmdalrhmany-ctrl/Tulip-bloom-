@@ -4,6 +4,9 @@ import Link from "next/link";
 import { Search, SlidersHorizontal, X, ArrowUpDown, Check } from "lucide-react";
 import { C, SH, formatPrice } from "../../lib/colors.js";
 import { getIcon } from "../../lib/iconMap.js";
+import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import { buildIndex, searchProducts } from "../../lib/searchEngine.js";
 import ProductCard from "./ProductCard.jsx";
 import { STOCK_LABELS } from "./StockBadge.jsx";
 import { trackSearch, trackSearchNoResults, trackFilterUse, trackViewItemList } from "../../lib/analytics.js";
@@ -32,8 +35,14 @@ const SORTS = [
 const SEARCH_PLACEHOLDER = "ابحث عن باقة، مناسبة، أو نوع زهرة…";
 const BRAND_LABEL = "نوع الزهرة";
 
-export default function ProductBrowser({ categories, products, activeCatSlug }) {
-  const [query, setQuery] = useState("");
+function ProductBrowserInner({ categories, products, activeCatSlug }) {
+  /**
+   * ⚠️ إصلاح خلل نواة: النسخة السابقة كانت تحتفظ بنص البحث في
+   * حالة محلية ولا تقرأ من عنوان الصفحة إطلاقًا. أي رابط بصيغة
+   * `/shop?q=...` كان يصل ولا يُرشِّح شيئًا — رابط يبدو حيًّا وهو ميت.
+   */
+  const searchParams = useSearchParams();
+  const [query, setQuery] = useState(() => searchParams?.get("q") || "");
   const [sort, setSort] = useState("relevant");
   const [brands, setBrands] = useState([]);
   const [stocks, setStocks] = useState([]);
@@ -59,13 +68,26 @@ export default function ProductBrowser({ categories, products, activeCatSlug }) 
 
   const ceiling = maxPrice ?? priceBounds.max;
 
+  /**
+   * الفهرس يُبنى مرة لكل قائمة منتجات لا مع كل ضغطة مفتاح.
+   * التطبيع والتفكيك أثقل من المطابقة نفسها، وإعادتهما في كل
+   * حرف تُحدث تلعثمًا محسوسًا على الجوال.
+   */
+  const searchIndex = useMemo(() => buildIndex(products), [products]);
+
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    let out = products.filter((p) => {
-      if (q) {
-        const hay = `${p.name} ${p.description || ""} ${p.brand || ""}`.toLowerCase();
-        if (!hay.includes(q)) return false;
-      }
+    const q = query.trim();
+
+    // المحرّك يتولّى العربية: تطبيع الهمزات، المرادفات،
+    // السوابق الملتصقة، والمطابقة التقريبية للأخطاء المطبعية.
+    let base = products;
+    let ranked = null;
+    if (q) {
+      ranked = searchProducts(q, searchIndex, { limit: 500 });
+      base = ranked.map((r) => r.product);
+    }
+
+    let out = base.filter((p) => {
       if (brands.length && !brands.includes(p.brand)) return false;
       if (stocks.length && !stocks.includes(p.stock || "in_stock")) return false;
       if (Number(p.price) > ceiling) return false;
@@ -79,9 +101,11 @@ export default function ProductBrowser({ categories, products, activeCatSlug }) 
       discount: (a, b) => disc(b) - disc(a),
       newest: (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
     };
+    // مع وجود بحث، «المختارة لك» = ترتيب الصلة القادم من المحرّك.
+    // إعادة الفرز افتراضيًا هنا تُلغي عمل الترتيب كله.
     if (sorters[sort]) out = [...out].sort(sorters[sort]);
     return out;
-  }, [products, query, brands, stocks, ceiling, sort]);
+  }, [products, searchIndex, query, brands, stocks, ceiling, sort]);
 
   // أي تغيير في البحث أو الفلاتر يعيدنا لأول دفعة
   React.useEffect(() => { setLimit(PAGE_SIZE); }, [query, brands, stocks, maxPrice, sort]);
@@ -326,5 +350,26 @@ export default function ProductBrowser({ categories, products, activeCatSlug }) 
         </>
       )}
     </div>
+  );
+}
+
+
+/**
+ * ⚠️ حدود Suspense إلزامية.
+ *
+ * `useSearchParams` يجبر Next على الخروج من التوليد الثابت، وبلا
+ * غلاف Suspense يفشل بناء كل صفحة تستدعي هذا المكوّن:
+ *
+ *   useSearchParams() should be wrapped in a suspense boundary
+ *   Error occurred prerendering page "/shop"
+ *
+ * الغلاف هنا لا في الصفحات: المكوّن هو مصدر القيد، فيحمل علاجه
+ * معه ولا يفرضه على كل من يستعمله.
+ */
+export default function ProductBrowser(props) {
+  return (
+    <Suspense fallback={null}>
+      <ProductBrowserInner {...props} />
+    </Suspense>
   );
 }
