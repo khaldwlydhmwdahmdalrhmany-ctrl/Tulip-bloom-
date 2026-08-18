@@ -2,12 +2,13 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { User, Package, MapPin, Users, CalendarHeart, LogOut } from "lucide-react";
+import { User, Package, MapPin, Users, CalendarHeart, LogOut, Heart } from "lucide-react";
 import { C } from "../../lib/colors.js";
 
 const ITEMS = [
   { href: "/account", label: "نظرة عامة", icon: User, exact: true },
   { href: "/account/orders", label: "طلباتي", icon: Package },
+  { href: "/account/favorites", label: "المفضّلة", icon: Heart },
   { href: "/account/recipients", label: "المستلمون والمناسبات", icon: CalendarHeart },
   { href: "/account/addresses", label: "عناويني", icon: MapPin },
   { href: "/account/profile", label: "بياناتي", icon: Users },

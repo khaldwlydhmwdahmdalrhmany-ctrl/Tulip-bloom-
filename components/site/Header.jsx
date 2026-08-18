@@ -20,6 +20,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { Menu, X, ShoppingCart, ChevronDown, Search, User } from "lucide-react";
+import SearchOverlay from "./SearchOverlay.jsx";
 import { C } from "../../lib/colors.js";
 import { getIcon } from "../../lib/iconMap.js";
 import { MODULES } from "../../config/store.config.js";
@@ -30,7 +31,22 @@ import { useCart } from "../../context/CartContext.jsx";
 export default function Header({ categories = [], settings = {} }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [catOpen, setCatOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const { cartCount, setCartOpen } = useCart();
+
+  /**
+   * اختصار «/» لفتح البحث — معيار متعارف عليه في المتاجر.
+   * نتجاهله داخل الحقول وإلا تعذّرت كتابة الشرطة في نموذج.
+   */
+  React.useEffect(() => {
+    const onKey = (e) => {
+      const tag = (e.target?.tagName || "").toLowerCase();
+      if (tag === "input" || tag === "textarea" || e.target?.isContentEditable) return;
+      if (e.key === "/") { e.preventDefault(); setSearchOpen(true); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   // الوحدة المطفأة تُخفي رابطها — لا روابط ميتة ولا صفحات من مجال آخر
   const links = NAV_LINKS.filter((l) => !l.module || MODULES[l.module]);
@@ -38,6 +54,8 @@ export default function Header({ categories = [], settings = {} }) {
   const accent = links.find((l) => l.accent);
 
   return (
+    <>
+    <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
     <header className="sticky top-0 z-40" style={{ background: `${C.pearl}F2`, backdropFilter: "blur(10px)" }}>
 
       {/* ══ شريط الوعد ══ */}
@@ -104,11 +122,26 @@ export default function Header({ categories = [], settings = {} }) {
 
           {/* ══ الإجراءات ══ */}
           <div className="flex items-center gap-2 shrink-0">
+            <button onClick={() => setSearchOpen(true)}
+                    aria-label="بحث"
+                    className="hidden sm:flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-[13px] transition-colors"
+                    style={{ border: `1px solid ${C.line}`, color: C.slate, minWidth: "11rem" }}>
+              <Search size={15} />
+              <span className="flex-1 text-right">ابحث…</span>
+              <kbd className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: C.pearl, color: C.slateLight }}>/</kbd>
+            </button>
+
+            <button onClick={() => setSearchOpen(true)} aria-label="بحث"
+                    className="sm:hidden w-10 h-10 rounded-xl flex items-center justify-center"
+                    style={{ border: `1px solid ${C.line}`, color: C.navy }}>
+              <Search size={17} />
+            </button>
+
             {accent && (
               <Link href={accent.to}
-                    className="hidden md:inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-bold transition-transform hover:-translate-y-0.5"
+                    className="hidden xl:inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-bold transition-transform hover:-translate-y-0.5"
                     style={{ background: C.mintTint, color: C.navy, border: `1px solid ${C.soft}` }}>
-                <Search size={14} /> {accent.label}
+                {accent.label}
               </Link>
             )}
 
@@ -206,5 +239,6 @@ export default function Header({ categories = [], settings = {} }) {
         </div>
       )}
     </header>
+    </>
   );
 }

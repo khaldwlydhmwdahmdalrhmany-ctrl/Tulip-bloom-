@@ -17,6 +17,11 @@ import { verifySessionToken, SESSION_COOKIE_NAME } from "./lib/auth.js";
 const PUBLIC_API = [
   { path: "/api/orders", methods: ["POST"] },
   { path: "/api/track", methods: ["POST"] },
+  // البحث عام: يقرأ منتجات منشورة فقط ولا يكشف شيئًا خاصًّا
+  { path: "/api/search", methods: ["GET"] },
+  // التسويق: كلاهما يتحقّق داخليًا ولا يكشف بيانات خاصة
+  { path: "/api/coupons/validate", methods: ["POST"] },
+  { path: "/api/cart/abandon", methods: ["POST"] },
   { path: "/api/admin/login", methods: ["POST"] },
   { path: "/api/admin/logout", methods: ["POST"] },
 ];

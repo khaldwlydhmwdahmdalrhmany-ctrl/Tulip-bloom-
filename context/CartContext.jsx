@@ -59,6 +59,83 @@ export function CartProvider({ children, allProducts }) {
   const cartDetails = useMemo(() => cart.map((i) => ({ ...i, product: findProduct(i.id) })).filter((i) => i.product), [cart, findProduct]);
   const cartCount = cart.reduce((s, i) => s + i.qty, 0);
   const cartTotal = cartDetails.reduce((s, i) => s + i.qty * i.product.price, 0);
+
+  /* ══ الكوبون ══
+     النتيجة هنا للعرض فقط. مسار /api/orders يعيد التحقّق من
+     الصفر ويتجاهل أي مبلغ خصم يصل من المتصفح. */
+  const [coupon, setCoupon] = useState(null);        // { code, label, discount, shipping, total, freeShipping }
+  const [couponError, setCouponError] = useState("");
+  const [couponBusy, setCouponBusy] = useState(false);
+
+  const applyCoupon = useCallback(async (code) => {
+    const c = String(code || "").trim();
+    if (!c) return;
+    setCouponBusy(true); setCouponError("");
+    try {
+      const res = await fetch("/api/coupons/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: c,
+          phone: customer.phone,
+          items: cartDetails.map((i) => ({ id: i.id, qty: i.qty })),
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) { setCoupon(null); setCouponError(data.error || "تعذّر تطبيق الكود."); return; }
+      setCoupon(data);
+    } catch {
+      setCouponError("تعذّر الاتصال. حاول مجددًا.");
+    } finally { setCouponBusy(false); }
+  }, [cartDetails, customer.phone]);
+
+  const clearCoupon = useCallback(() => { setCoupon(null); setCouponError(""); }, []);
+
+  // تغيّر السلة يُبطل الخصم المحسوب — قد يسقط تحت حد الكوبون
+  useEffect(() => { if (coupon) setCoupon(null); /* eslint-disable-next-line */ }, [cartTotal]);
+
+  const discount = coupon?.discount || 0;
+  const payableTotal = Math.max(0, cartTotal - discount);
+
+  /* ══ السلة المتروكة ══
+     معرّف جلسة ثابت في localStorage: أغلب من يترك سلة لم يسجّل
+     دخولًا، فالربط بالحساب وحده يفقد أكثرهم. */
+  const sessionIdRef = useRef(null);
+  if (typeof window !== "undefined" && !sessionIdRef.current) {
+    try {
+      let sid = window.localStorage.getItem("tb_sid");
+      if (!sid) {
+        sid = Math.random().toString(36).slice(2) + Date.now().toString(36);
+        window.localStorage.setItem("tb_sid", sid);
+      }
+      sessionIdRef.current = sid;
+    } catch { sessionIdRef.current = "anon"; }
+  }
+
+  /**
+   * يُرسل بعد سكون ٨ ثوانٍ من آخر تغيير — لا مع كل ضغطة.
+   * الإرسال الفوري يسجّل كل خطوة تسوّق كأنها سلة متروكة،
+   * فيمتلئ تقرير اللوحة بضجيج لا يمكن التصرّف فيه.
+   */
+  useEffect(() => {
+    if (cartDetails.length === 0) return;
+    const t = setTimeout(() => {
+      const attr = resolveAttribution();
+      fetch("/api/cart/abandon", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionId: sessionIdRef.current,
+          items: cartDetails.map((i) => ({ id: i.id, name: i.product.name, qty: i.qty, price: i.product.price })),
+          total: cartTotal,
+          name: customer.name || null,
+          phone: customer.phone || null,
+          source: attr?.source, campaign: attr?.campaign,
+        }),
+      }).catch(() => {});
+    }, 8000);
+    return () => clearTimeout(t);
+  }, [cartDetails, cartTotal, customer.name, customer.phone]);
   const canCheckout = customer.name.trim() && customer.phone.trim() && cart.length > 0;
 
   const sendToWhatsApp = useCallback(async () => {
@@ -71,8 +148,11 @@ export function CartProvider({ children, allProducts }) {
     trackBeginCheckout(cartDetails, cartTotal);
     const lines = cartDetails.map((i) => `• ${i.product.name} × ${i.qty} = ${formatPrice(i.product.price * i.qty)} ريال`).join("\n");
     const msg =
-      `مرحبًا {STORE.shortName} 🌿\nأرغب بإتمام الطلب التالي:\n\n${lines}\n\n` +
-      `الإجمالي: ${formatPrice(cartTotal)} ريال\n\n` +
+      `مرحبًا ${STORE.shortName} 🌿\nأرغب بإتمام الطلب التالي:\n\n${lines}\n\n` +
+      (discount > 0
+        ? `المجموع: ${formatPrice(cartTotal)} ريال\nالخصم (${coupon.code}): -${formatPrice(discount)} ريال\n`
+        : "") +
+      `الإجمالي: ${formatPrice(payableTotal)} ريال\n\n` +
       `الاسم: ${customer.name}\nالجوال: ${customer.phone}\nالمدينة / العنوان: ${customer.city || "—"}`;
 
     // حفظ الطلب أولًا للحصول على رقم الطلب، ثم إدراجه في رسالة واتساب.
@@ -87,7 +167,9 @@ export function CartProvider({ children, allProducts }) {
           customerPhone: customer.phone,
           customerCity: customer.city,
           items: cartDetails.map((i) => ({ id: i.id, name: i.product.name, qty: i.qty, price: i.product.price })),
-          total: cartTotal,
+          total: payableTotal,
+          couponCode: coupon?.code || null,
+          sessionId: sessionIdRef.current,
           // مصدر الزيارة التي أنتجت هذا الطلب — أساس تقارير لوحة التحكم
           source: attr?.source, medium: attr?.medium,
           campaign: attr?.campaign, landingPath: attr?.landingPath,
@@ -103,9 +185,9 @@ export function CartProvider({ children, allProducts }) {
 
     trackPurchase(orderNumber, cartDetails, cartTotal, attr);
     setSubmitting(false);
-    setConfirmation({ orderNumber, total: cartTotal, name: customer.name, link: buildWhatsAppLink(finalMsg) });
+    setConfirmation({ orderNumber, total: payableTotal, name: customer.name, link: buildWhatsAppLink(finalMsg) });
     window.open(buildWhatsAppLink(finalMsg), "_blank");
-  }, [customer, cart, cartDetails, cartTotal, submitting]);
+  }, [customer, cart, cartDetails, cartTotal, payableTotal, discount, coupon, submitting]);
 
   /** يُستدعى من شاشة التأكيد لبدء طلب جديد. */
   const closeConfirmation = useCallback(() => {
@@ -114,6 +196,8 @@ export function CartProvider({ children, allProducts }) {
     setCartOpen(false);
     setCustomer({ name: "", phone: "", city: "" });
     setFormTouched(false);
+    setCoupon(null);
+    setCouponError("");
   }, []);
 
   const buyNow = useCallback((id) => {
@@ -123,6 +207,7 @@ export function CartProvider({ children, allProducts }) {
 
   const value = {
     cart, cartDetails, cartCount, cartTotal, cartOpen, setCartOpen,
+    coupon, couponError, couponBusy, applyCoupon, clearCoupon, discount, payableTotal,
     addToCart, updateQty, removeItem, buyNow,
     customer, setCustomer, formTouched, setFormTouched, canCheckout, sendToWhatsApp,
     toast, submitting, confirmation, closeConfirmation,

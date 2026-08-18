@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { X, Plus, Minus, ShoppingCart, MessageCircle, CheckCircle2, Loader2 } from "lucide-react";
+import { X, Plus, Minus, ShoppingCart, MessageCircle, CheckCircle2, Loader2, Tag } from "lucide-react";
 import { C, formatPrice } from "../../lib/colors.js";
 import { getIcon } from "../../lib/iconMap.js";
 import { useCart } from "../../context/CartContext.jsx";
@@ -11,7 +11,9 @@ export default function CartDrawer() {
     cartOpen, setCartOpen, cartDetails, cartTotal,
     updateQty, removeItem, customer, setCustomer,
     formTouched, canCheckout, sendToWhatsApp, toast, submitting,
+    coupon, couponError, couponBusy, applyCoupon, clearCoupon, discount, payableTotal,
   } = useCart();
+  const [codeInput, setCodeInput] = React.useState("");
 
   return (
     <>
@@ -69,9 +71,66 @@ export default function CartDrawer() {
 
             {cartDetails.length > 0 && (
               <div className="p-4 border-t flex flex-col gap-3" style={{ borderColor: C.line }}>
+
+                {/* ══ كود الخصم ══ */}
+                {coupon ? (
+                  <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl"
+                       style={{ background: `${C.success}12`, border: `1px solid ${C.success}33` }}>
+                    <Tag size={14} style={{ color: C.success }} className="shrink-0" />
+                    <span className="text-[12px] font-bold flex-1 truncate" style={{ color: C.navy }}>
+                      {coupon.code} · {coupon.label}
+                    </span>
+                    <button onClick={clearCoupon} aria-label="إزالة الكود"
+                            className="shrink-0" style={{ color: C.slateLight }}>
+                      <X size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex gap-2">
+                      <input
+                        value={codeInput}
+                        onChange={(e) => setCodeInput(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && applyCoupon(codeInput)}
+                        placeholder="كود الخصم"
+                        dir="ltr"
+                        className="flex-1 px-3 py-2.5 rounded-xl text-[13px] outline-none text-right uppercase"
+                        style={{ border: `1px solid ${C.line}`, background: C.pearl }}
+                      />
+                      <button onClick={() => applyCoupon(codeInput)} disabled={couponBusy || !codeInput.trim()}
+                              className="px-4 rounded-xl text-[12px] font-bold shrink-0"
+                              style={{ background: C.pearl, color: C.navy, border: `1px solid ${C.line}`,
+                                       opacity: codeInput.trim() ? 1 : .5 }}>
+                        {couponBusy ? <Loader2 size={14} className="animate-spin" /> : "تطبيق"}
+                      </button>
+                    </div>
+                    {couponError && (
+                      <p className="text-[11px]" style={{ color: C.danger }}>{couponError}</p>
+                    )}
+                  </div>
+                )}
+
+                {/* ══ الإجماليات ══ */}
+                {discount > 0 && (
+                  <>
+                    <div className="flex items-center justify-between text-[13px]">
+                      <span style={{ color: C.slate }}>المجموع</span>
+                      <span className="num" style={{ color: C.slate }}>{formatPrice(cartTotal)} ر.س</span>
+                    </div>
+                    <div className="flex items-center justify-between text-[13px]">
+                      <span style={{ color: C.success }}>الخصم</span>
+                      <span className="num font-bold" style={{ color: C.success }}>
+                        −{formatPrice(discount)} ر.س
+                      </span>
+                    </div>
+                  </>
+                )}
+
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-bold" style={{ color: C.slate }}>الإجمالي</span>
-                  <span className="font-display text-xl" style={{ color: C.navy }}>{formatPrice(cartTotal)} ر.س</span>
+                  <span className="font-display text-xl num" style={{ color: C.navy }}>
+                    {formatPrice(payableTotal)} ر.س
+                  </span>
                 </div>
                 <button
                   onClick={sendToWhatsApp}
