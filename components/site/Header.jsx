@@ -19,7 +19,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Menu, X, ShoppingCart, ChevronDown, Search } from "lucide-react";
+import { Menu, X, ShoppingCart, ChevronDown, Search, User } from "lucide-react";
 import { C } from "../../lib/colors.js";
 import { getIcon } from "../../lib/iconMap.js";
 import { MODULES } from "../../config/store.config.js";
@@ -112,6 +112,13 @@ export default function Header({ categories = [], settings = {} }) {
               </Link>
             )}
 
+            <Link href="/account"
+                  aria-label="حسابي"
+                  className="w-10 h-10 rounded-xl flex items-center justify-center transition-colors"
+                  style={{ border: `1px solid ${C.line}`, color: C.navy }}>
+              <User size={17} />
+            </Link>
+
             <button onClick={() => setCartOpen(true)}
                     className="relative flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-[13px] transition-transform hover:-translate-y-0.5"
                     style={{ background: C.navy, color: "#fff" }}
@@ -177,6 +184,9 @@ export default function Header({ categories = [], settings = {} }) {
                     {l.label}
                   </Link>
                 ))}
+                <Link href="/account" onClick={() => setMenuOpen(false)} className="py-2.5 text-sm" style={{ color: C.ink }}>
+                  حسابي
+                </Link>
                 {MODULES.faq && (
                   <Link href="/faq" onClick={() => setMenuOpen(false)} className="py-2.5 text-sm" style={{ color: C.ink }}>
                     الأسئلة الشائعة

@@ -21,7 +21,21 @@ const PUBLIC_API = [
   { path: "/api/admin/logout", methods: ["POST"] },
 ];
 
+/**
+ * مسارات حساب العميل.
+ *
+ * "عام" هنا يعني: لا تتطلب جلسة **مسؤول**. لكنها ليست مفتوحة —
+ * كل مسار منها يتحقّق من جلسة العميل بنفسه عبر
+ * `getCurrentCustomer()` ويردّ 401 بدونها.
+ *
+ * السبب في عدم التحقّق هنا: الـ middleware يعمل على Edge Runtime
+ * بلا وصول لقاعدة البيانات، وجلسات العملاء مخزّنة في القاعدة
+ * لتكون قابلة للإبطال. التحقّق يجري في طبقة Node.
+ */
+const CUSTOMER_API_PREFIX = "/api/account/";
+
 function isPublic(pathname, method) {
+  if (pathname.startsWith(CUSTOMER_API_PREFIX)) return true;
   return PUBLIC_API.some(
     (r) => pathname === r.path && r.methods.includes(method)
   );
