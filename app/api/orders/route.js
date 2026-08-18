@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createOrder } from "../../../lib/db.js";
 import { rateLimit, clientIp } from "../../../lib/rateLimit.js";
+import { getCurrentCustomer } from "../../../lib/customerSession.js";
+import { attachOrderToCustomer } from "../../../lib/customerDb.js";
 
 export const dynamic = "force-dynamic";
 
@@ -67,6 +69,18 @@ export async function POST(request) {
       campaign: cap(body.campaign, 120),
       landingPath: cap(body.landingPath, 200),
     });
+
+    /**
+     * ⭐ ربط الطلب بحساب العميل إن كان مسجّلًا.
+     *
+     * لا يُشترط الحساب: الطلب كضيف يبقى صالحًا تمامًا وينجح كما
+     * كان. الربط إضافة صامتة — فشلها لا يُفشل الطلب، لأن خسارة
+     * سطر في سجلّ العميل أهون بكثير من خسارة الطلب نفسه.
+     */
+    try {
+      const me = await getCurrentCustomer();
+      if (me) await attachOrderToCustomer(order.id, me.id);
+    } catch { /* الطلب نجح — الربط تفصيل ثانوي */ }
 
     return NextResponse.json(order, { status: 201 });
   } catch (err) {

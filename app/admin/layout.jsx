@@ -6,7 +6,7 @@ import { STORE } from "../../config/store.config.js";
 import { themeColors, TYPOGRAPHY } from "../../config/theme.config.js";
 import {
   LayoutGrid, Package, Tags, Image as ImageIcon, ShoppingBag,
-  LogOut, Settings, BarChart3, Menu, X, ExternalLink, Percent, FileText, Flower2,
+  LogOut, Settings, BarChart3, Menu, X, ExternalLink, Percent, FileText, Flower2, UsersRound,
 } from "lucide-react";
 
 /**
@@ -41,6 +41,7 @@ const NAV = [
   { href: "/admin/banners", label: "البنرات", icon: ImageIcon },
   { href: "/admin/offers", label: "العروض", icon: Percent },
   { href: "/admin/orders", label: "الطلبات", icon: ShoppingBag },
+  { href: "/admin/customers", label: "العملاء", icon: UsersRound },
   { href: "/admin/analytics", label: "التحليلات", icon: BarChart3 },
   { href: "/admin/legal", label: "الصفحات القانونية", icon: FileText },
   { href: "/admin/settings", label: "الإعدادات", icon: Settings },
