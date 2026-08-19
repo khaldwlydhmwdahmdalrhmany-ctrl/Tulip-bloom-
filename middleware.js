@@ -22,6 +22,8 @@ const PUBLIC_API = [
   // التسويق: كلاهما يتحقّق داخليًا ولا يكشف بيانات خاصة
   { path: "/api/coupons/validate", methods: ["POST"] },
   { path: "/api/cart/abandon", methods: ["POST"] },
+  // خيارات الشحن: تحتاجها السلة قبل تسجيل الدخول، والأسعار تُقرأ من القاعدة
+  { path: "/api/shipping/quote", methods: ["POST"] },
   { path: "/api/admin/login", methods: ["POST"] },
   { path: "/api/admin/logout", methods: ["POST"] },
 ];
