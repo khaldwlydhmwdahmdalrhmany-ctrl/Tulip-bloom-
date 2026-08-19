@@ -16,15 +16,27 @@
 import React, { useState, useRef } from "react";
 import {
   Plus, Trash2, ChevronUp, ChevronDown, Save, Loader2, Check, Eye, EyeOff,
-  Upload, X, Settings2, Copy,
+  Upload, X, Settings2, Copy, Images,
 } from "lucide-react";
 import { themeColors, TYPOGRAPHY } from "../config/theme.config.js";
 import { getIcon } from "../lib/iconMap.js";
+import MediaPicker from "./MediaPicker.jsx";
 
 const T = themeColors();
 const H = { fontFamily: TYPOGRAPHY.headingFontFamily, fontWeight: 600 };
 
-export default function PageEditor({ page: initial, blockTypes }) {
+/**
+ * ⭐ المحرّر يخدم الصفحات والمقالات معًا.
+ *
+ * `kind="post"` يغيّر: نقطة النهاية، وبادئة المعاينة، والحقول
+ * الخاصة (الغلاف، المقتطف، التصنيف، الكاتب، مميّز).
+ * البديل كان نسخ ٣٠٠ سطر — وكل تحسين لاحق للبلوكات سيُطبَّق
+ * في نسخة وينسى في الأخرى.
+ */
+export default function PageEditor({ page: initial, blockTypes, kind = "page", categories = [] }) {
+  const isPost = kind === "post";
+  const endpoint = isPost ? "/api/admin/blog" : "/api/admin/pages";
+  const publicPrefix = isPost ? "/blog/" : "/p/";
   const [page, setPage] = useState(initial);
   const [blocks, setBlocks] = useState(initial.blocks || []);
   const [open, setOpen] = useState(0);
@@ -33,6 +45,8 @@ export default function PageEditor({ page: initial, blockTypes }) {
   const [error, setError] = useState("");
   const [showSettings, setShowSettings] = useState(false);
   const [picker, setPicker] = useState(false);
+  // منتقي الوسائط: نحتفظ بدالة الإسناد للحقل الذي فتحه
+  const [mediaFor, setMediaFor] = useState(null);
 
   const card = { background: "#fff", border: `1px solid ${T.line}` };
   const field = "w-full px-3.5 py-2.5 rounded-xl text-[13px] outline-none";
@@ -43,13 +57,13 @@ export default function PageEditor({ page: initial, blockTypes }) {
     setBusy(true); setError(""); setSaved(false);
     try {
       const body = { ...page, ...over, blocks };
-      const res = await fetch("/api/admin/pages", {
+      const res = await fetch(endpoint, {
         method: "PUT", headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) { setError(d.error || "تعذّر الحفظ."); return; }
-      setPage((p) => ({ ...p, ...over, slug: d.page?.slug ?? p.slug }));
+      setPage((p) => ({ ...p, ...over, slug: (isPost ? d.post?.slug : d.page?.slug) ?? p.slug }));
       setSaved(true); setTimeout(() => setSaved(false), 2500);
     } finally { setBusy(false); }
   };
@@ -129,6 +143,12 @@ export default function PageEditor({ page: initial, blockTypes }) {
                placeholder="https://…" className={`${field} text-right`} style={fieldStyle} />
         <input ref={ref} type="file" accept="image/*" className="hidden"
                onChange={(e) => e.target.files?.[0] && upload(e.target.files[0], onChange)} />
+        {/* اختيار من المكتبة — يمنع رفع نفس الصورة مرارًا */}
+        <button onClick={() => setMediaFor(() => onChange)} type="button"
+                title="اختر من المكتبة"
+                className="px-3 rounded-xl shrink-0" style={{ background: T.surfaceAlt, color: T.muted }}>
+          <Images size={15} />
+        </button>
         <button onClick={() => ref.current?.click()} disabled={busy}
                 className="px-3 rounded-xl shrink-0" style={{ background: T.softTint, color: T.primary }}>
           <Upload size={15} />
@@ -196,6 +216,12 @@ export default function PageEditor({ page: initial, blockTypes }) {
   return (
     <div className="flex flex-col gap-5">
 
+      <MediaPicker
+        open={!!mediaFor}
+        onClose={() => setMediaFor(null)}
+        onSelect={(url) => mediaFor?.(url)}
+      />
+
       {/* ══ شريط الأدوات ══ */}
       <div className="p-4 rounded-2xl flex flex-wrap items-center gap-3 sticky top-0 z-20"
            style={{ ...card, backdropFilter: "blur(8px)" }}>
@@ -203,7 +229,7 @@ export default function PageEditor({ page: initial, blockTypes }) {
           <input value={page.title} onChange={(e) => setPage({ ...page, title: e.target.value })}
                  className="w-full text-lg outline-none bg-transparent"
                  style={{ color: T.primary, ...H }} />
-          <p className="text-[11px]" dir="ltr" style={{ color: T.mutedLight, textAlign: "right" }}>/p/{page.slug}</p>
+          <p className="text-[11px]" dir="ltr" style={{ color: T.mutedLight, textAlign: "right" }}>{publicPrefix}{page.slug}</p>
         </div>
 
         <span className="text-[10px] px-2.5 py-1 rounded-full font-bold flex items-center gap-1 shrink-0"
@@ -219,7 +245,7 @@ export default function PageEditor({ page: initial, blockTypes }) {
                 style={{ background: T.surfaceAlt, color: T.muted }}>
           <Settings2 size={15} />
         </button>
-        <a href={`/p/${page.slug}`} target="_blank" rel="noopener noreferrer"
+        <a href={`${publicPrefix}${page.slug}`} target="_blank" rel="noopener noreferrer"
            className="px-4 py-2.5 rounded-xl text-[12px] font-bold shrink-0"
            style={{ background: T.surfaceAlt, color: T.primary }}>معاينة</a>
         <button onClick={() => save()} disabled={busy}
@@ -264,12 +290,40 @@ export default function PageEditor({ page: initial, blockTypes }) {
             <textarea value={page.seoDescription} onChange={(e) => setPage({ ...page, seoDescription: e.target.value })}
                       rows={2} className={`${field} resize-none`} style={fieldStyle} />
           </div>
+          {isPost && (
+            <>
+              <div>
+                <label className={label} style={{ color: T.mutedLight }}>التصنيف</label>
+                <select value={page.categoryId || ""} onChange={(e) => setPage({ ...page, categoryId: e.target.value })}
+                        className={field} style={fieldStyle}>
+                  <option value="">بلا تصنيف</option>
+                  {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={label} style={{ color: T.mutedLight }}>الكاتب</label>
+                <input value={page.author || ""} onChange={(e) => setPage({ ...page, author: e.target.value })}
+                       className={field} style={fieldStyle} />
+              </div>
+              <div className="sm:col-span-2">
+                <label className={label} style={{ color: T.mutedLight }}>صورة الغلاف</label>
+                <ImageField value={page.coverImage} onChange={(v) => setPage({ ...page, coverImage: v })} />
+              </div>
+              <div className="sm:col-span-2">
+                <label className={label} style={{ color: T.mutedLight }}>
+                  المقتطف <span style={{ color: T.mutedLight }}>(يظهر في القائمة وRSS)</span>
+                </label>
+                <textarea value={page.excerpt || ""} onChange={(e) => setPage({ ...page, excerpt: e.target.value })}
+                          rows={2} className={`${field} resize-none`} style={fieldStyle} />
+              </div>
+            </>
+          )}
+
           <div className="sm:col-span-2 flex flex-wrap gap-5">
-            {[
-              ["showInFooter", "إظهار في الفوتر"],
-              ["showInHeader", "إظهار في الهيدر"],
-              ["noIndex", "منع الفهرسة"],
-            ].map(([k, l]) => (
+            {(isPost
+              ? [["featured", "مقال مميّز"], ["noIndex", "منع الفهرسة"]]
+              : [["showInFooter", "إظهار في الفوتر"], ["showInHeader", "إظهار في الهيدر"], ["noIndex", "منع الفهرسة"]]
+            ).map(([k, l]) => (
               <label key={k} className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={!!page[k]} onChange={(e) => setPage({ ...page, [k]: e.target.checked })}
                        style={{ accentColor: k === "noIndex" ? T.danger : T.accent }} />

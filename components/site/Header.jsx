@@ -28,7 +28,7 @@ import { NAV_LINKS, TOP_BAR } from "../../config/content.config.js";
 import StoreLogo from "./StoreLogo.jsx";
 import { useCart } from "../../context/CartContext.jsx";
 
-export default function Header({ categories = [], settings = {}, customPages = [] }) {
+export default function Header({ categories = [], settings = {}, customPages = [], navItems = [] }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [catOpen, setCatOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -48,8 +48,14 @@ export default function Header({ categories = [], settings = {}, customPages = [
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  // الوحدة المطفأة تُخفي رابطها — لا روابط ميتة ولا صفحات من مجال آخر
-  const links = NAV_LINKS.filter((l) => !l.module || MODULES[l.module]);
+  /**
+   * قائمة اللوحة تتجاوز التهيئة متى وُجدت.
+   * الفراغ يعني «استعمل الافتراضي» — متجر لم يحرّر قوائمه يعمل
+   * كما هو، ومن حرّرها لا تعود عليه بعد أي تحديث للتهيئة.
+   */
+  const links = navItems.length
+    ? navItems.map((n) => ({ to: n.href, label: n.label, accent: n.accent, newTab: n.newTab }))
+    : NAV_LINKS.filter((l) => !l.module || MODULES[l.module]);
   const main = links.filter((l) => !l.accent);
   const accent = links.find((l) => l.accent);
 

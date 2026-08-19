@@ -7,8 +7,11 @@ import SocialLinks from "./SocialLinks.jsx";
 import { STORE, MODULES } from "../../config/store.config.js";
 import { NAV_LINKS } from "../../config/content.config.js";
 
-export default function Footer({ settings = {}, legalPages = [], customPages = [] }) {
-  const navLinks = NAV_LINKS.filter((l) => !l.module || MODULES[l.module]);
+export default function Footer({ settings = {}, legalPages = [], customPages = [], navItems = [] }) {
+  // نفس منطق الهيدر: قائمة اللوحة تفوز، والفراغ يعني الافتراضي
+  const navLinks = navItems.length
+    ? navItems.map((n) => ({ to: n.href, label: n.label }))
+    : NAV_LINKS.filter((l) => !l.module || MODULES[l.module]);
   const phone = settings.contact_phone || "+966 53 254 0595";
   const address = settings.contact_address || "المملكة العربية السعودية";
   const email = settings.contact_email;
