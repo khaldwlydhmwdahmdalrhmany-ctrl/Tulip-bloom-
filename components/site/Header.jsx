@@ -28,7 +28,7 @@ import { NAV_LINKS, TOP_BAR } from "../../config/content.config.js";
 import StoreLogo from "./StoreLogo.jsx";
 import { useCart } from "../../context/CartContext.jsx";
 
-export default function Header({ categories = [], settings = {} }) {
+export default function Header({ categories = [], settings = {}, customPages = [] }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [catOpen, setCatOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -116,6 +116,14 @@ export default function Header({ categories = [], settings = {} }) {
                     className="transition-opacity hover:opacity-60"
                     style={{ color: C.ink, fontWeight: 500 }}>
                 {l.label}
+              </Link>
+            ))}
+            {/* صفحات مخصّصة مُعلَّمة «إظهار في الهيدر» */}
+            {customPages.filter((p) => p.inHeader).map((p) => (
+              <Link key={p.slug} href={`/p/${p.slug}`}
+                    className="transition-opacity hover:opacity-60"
+                    style={{ color: C.ink, fontWeight: 500 }}>
+                {p.title}
               </Link>
             ))}
           </nav>

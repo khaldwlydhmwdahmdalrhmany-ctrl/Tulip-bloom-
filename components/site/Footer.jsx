@@ -7,7 +7,7 @@ import SocialLinks from "./SocialLinks.jsx";
 import { STORE, MODULES } from "../../config/store.config.js";
 import { NAV_LINKS } from "../../config/content.config.js";
 
-export default function Footer({ settings = {}, legalPages = [] }) {
+export default function Footer({ settings = {}, legalPages = [], customPages = [] }) {
   const navLinks = NAV_LINKS.filter((l) => !l.module || MODULES[l.module]);
   const phone = settings.contact_phone || "+966 53 254 0595";
   const address = settings.contact_address || "المملكة العربية السعودية";
@@ -54,6 +54,12 @@ export default function Footer({ settings = {}, legalPages = [] }) {
               </li>
             ))}
             <li><Link href="/faq" className="hover:underline">الأسئلة الشائعة</Link></li>
+            {/* صفحات مخصّصة مُعلَّمة «إظهار في الفوتر» */}
+            {customPages.filter((p) => p.inFooter).map((p) => (
+              <li key={p.slug}>
+                <Link href={`/p/${p.slug}`} className="hover:underline">{p.title}</Link>
+              </li>
+            ))}
             <li><Link href="/privacy" className="hover:underline">سياسة الخصوصية</Link></li>
             {legalPages.map((p) => (
               <li key={p.slug}>
