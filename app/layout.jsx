@@ -70,6 +70,7 @@ export default async function RootLayout({ children }) {
           وتظليل النص. حقنها هنا يربط الورقة كلها بالثيم النشط.
         */}
         <style dangerouslySetInnerHTML={{ __html: themeCssVars() }} />
+
         {settings.gsc_verification && (
           <meta name="google-site-verification" content={settings.gsc_verification} />
         )}

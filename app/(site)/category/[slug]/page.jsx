@@ -9,6 +9,7 @@ import ProductBrowser from "../../../../components/site/ProductBrowser.jsx";
 import CtaBand from "../../../../components/site/CtaBand.jsx";
 import { categoryMetadata, itemListSchema, breadcrumbSchema, JsonLd } from "../../../../lib/seo.jsx";
 import { CATEGORY_PAGE } from "../../../../config/content.config.js";
+import { applyOverride, redirectOrNotFound } from "../../../../lib/seoOverride.js";
 
 // السلَغ يصل من Next.js مُرمّزًا (percent-encoding) عندما يحتوي حروفًا عربية،
 // لذا نفكّ الترميز قبل أي استعلام على قاعدة البيانات.
@@ -25,14 +26,14 @@ export async function generateMetadata({ params }) {
   const category = await getCategoryBySlug(decodeSlug(params.slug));
   if (!category) return { title: "التصنيف غير موجود" };
   const products = await getProducts({ categorySlug: category.slug });
-  return categoryMetadata(category, products.length);
+  return applyOverride(`/category/${params.slug}`, categoryMetadata(category, products.length));
 }
 
 export default async function CategoryPage({ params }) {
   const slug = decodeSlug(params.slug);
 
   const category = await getCategoryBySlug(slug);
-  if (!category) notFound();
+  if (!category) await redirectOrNotFound(`/category/${params.slug}`);
 
   const [categories, products, catBanners] = await Promise.all([
     getCategories(),

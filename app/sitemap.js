@@ -1,4 +1,6 @@
 import { getSitemapData, getLegalPages } from "../lib/queries.js";
+import { listPages } from "../lib/pagesDb.js";
+import { MODULES } from "../config/store.config.js";
 import { siteUrl } from "../lib/seo.jsx";
 
 /**
@@ -12,9 +14,12 @@ const STATIC_PAGES = [
   { path: "", priority: 1.0, freq: "daily" },
   { path: "/shop", priority: 0.9, freq: "daily" },
   { path: "/offers", priority: 0.9, freq: "daily" },
-  { path: "/maintenance", priority: 0.7, freq: "monthly" },
-  { path: "/maintenance/technician", priority: 0.7, freq: "monthly" },
-  { path: "/maintenance/urgent", priority: 0.6, freq: "monthly" },
+  // ⚠️ إصلاح خلل نواة: كانت مسارات /maintenance مُدرجة دائمًا حتى
+  //    مع إطفاء الوحدة — فتُقدَّم لمحركات البحث صفحات لا رابط
+  //    إليها في الموقع، وبعضها من مجال آخر تمامًا.
+  { path: "/occasions", priority: 0.8, freq: "weekly" },
+  { path: "/care", priority: 0.7, freq: "monthly" },
+  { path: "/gift-finder", priority: 0.7, freq: "monthly" },
   { path: "/about", priority: 0.6, freq: "monthly" },
   { path: "/contact", priority: 0.6, freq: "monthly" },
   { path: "/faq", priority: 0.5, freq: "monthly" },
@@ -22,6 +27,17 @@ const STATIC_PAGES = [
 ];
 
 export default async function sitemap() {
+  // الصفحات المخصّصة المنشورة — تدخل الخريطة تلقائيًا
+  const custom = await listPages({ status: "published" }).catch(() => []);
+  const customEntries = custom
+    .filter((p) => !(p.noIndex === true || p.noIndex === 1))
+    .map((p) => ({
+      url: `${siteUrl()}/p/${p.slug}`,
+      lastModified: p.updatedAt ? new Date(p.updatedAt) : new Date(),
+      changeFrequency: "monthly",
+      priority: 0.5,
+    }));
+
   const base = siteUrl();
   const now = new Date();
 
@@ -66,5 +82,6 @@ export default async function sitemap() {
       changeFrequency: "weekly",
       priority: 0.7,
     })),
+    ...customEntries,
   ];
 }

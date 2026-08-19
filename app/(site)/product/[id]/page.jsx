@@ -23,6 +23,7 @@ import TrustStrip from "../../../../components/site/TrustStrip.jsx";
 import FaqAccordion from "../../../../components/site/FaqAccordion.jsx";
 import CtaBand from "../../../../components/site/CtaBand.jsx";
 import { PRODUCT_PAGE } from "../../../../config/content.config.js";
+import { applyOverride, redirectOrNotFound } from "../../../../lib/seoOverride.js";
 import { getIcon } from "../../../../lib/iconMap.js";
 
 const PRODUCT_FAQS = PRODUCT_PAGE.faqs;
@@ -31,12 +32,12 @@ const PRODUCT_FAQS = PRODUCT_PAGE.faqs;
 export async function generateMetadata({ params }) {
   const product = await getProductById(params.id);
   if (!product) return { title: "المنتج غير موجود" };
-  return productMetadata(product);
+  return applyOverride(`/product/${params.id}`, productMetadata(product));
 }
 
 export default async function ProductPage({ params }) {
   const product = await getProductById(params.id);
-  if (!product) notFound();
+  if (!product) await redirectOrNotFound(`/product/${params.id}`);
 
   const siblings = await getProducts({ categorySlug: product.category?.slug });
   const related = siblings.filter((p) => p.id !== product.id).slice(0, 4);
