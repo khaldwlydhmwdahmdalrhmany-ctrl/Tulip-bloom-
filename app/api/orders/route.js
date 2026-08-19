@@ -5,6 +5,7 @@ import { getCurrentCustomer } from "../../../lib/customerSession.js";
 import { attachOrderToCustomer } from "../../../lib/customerDb.js";
 import { findCouponByCode, couponUsesBy, redeemCoupon, markCartRecovered } from "../../../lib/marketingDb.js";
 import { evaluateCoupon, computeTotals } from "../../../lib/coupon.js";
+import { resolveShipping } from "../../../lib/shippingDb.js";
 import { getProducts } from "../../../lib/queries.js";
 
 export const dynamic = "force-dynamic";
@@ -69,6 +70,28 @@ export async function POST(request) {
   let discount = 0;
   let serverTotal = numTotal;
 
+  /**
+   * ══ الشحن يُحسب على الخادم ══
+   *
+   * ⚠️ نفس قاعدة الكوبونات: لا نثق بأي تكلفة شحن من المتصفح.
+   * نعيد مطابقة المدينة بالمنطقة ونجلب سعر الخيار من القاعدة.
+   * فشل الحساب يسقط إلى سعر `store.config.js` — الطلب يمرّ.
+   */
+  let shipping = { method: null, cost: null, slotLabel: "", carrier: "manual" };
+  try {
+    const catalog = await getProducts();
+    const sub = items.reduce((sum, i) => {
+      const p = catalog.find((x) => x.id === i.id);
+      return p ? sum + Number(p.price) * Math.max(1, Number(i.qty) || 1) : sum;
+    }, 0);
+    if (sub > 0) {
+      shipping = await resolveShipping({
+        city: customerCity, subtotal: sub,
+        methodId: body.shippingMethodId, slotId: body.deliverySlotId,
+      });
+    }
+  } catch { /* السعر الافتراضي يتولّى */ }
+
   if (body.couponCode) {
     try {
       const coupon = await findCouponByCode(body.couponCode);
@@ -108,6 +131,10 @@ export async function POST(request) {
       total: serverTotal,
       couponCode: appliedCoupon ? appliedCoupon.code : null,
       discount,
+      shippingMethod: shipping.method || null,
+      shippingCost: shipping.cost ?? 0,
+      deliveryDate: body.deliveryDate ? String(body.deliveryDate).slice(0, 20) : null,
+      deliverySlot: shipping.slotLabel || null,
       // بيانات الإسناد التسويقي — نصوص قصيرة فقط
       source: cap(body.source, 60),
       medium: cap(body.medium, 40),
