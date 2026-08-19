@@ -1,5 +1,6 @@
 import { getSitemapData, getLegalPages } from "../lib/queries.js";
 import { listPages } from "../lib/pagesDb.js";
+import { listPosts } from "../lib/blogDb.js";
 import { MODULES } from "../config/store.config.js";
 import { siteUrl } from "../lib/seo.jsx";
 
@@ -17,6 +18,7 @@ const STATIC_PAGES = [
   // ⚠️ إصلاح خلل نواة: كانت مسارات /maintenance مُدرجة دائمًا حتى
   //    مع إطفاء الوحدة — فتُقدَّم لمحركات البحث صفحات لا رابط
   //    إليها في الموقع، وبعضها من مجال آخر تمامًا.
+  { path: "/blog", priority: 0.8, freq: "weekly" },
   { path: "/occasions", priority: 0.8, freq: "weekly" },
   { path: "/care", priority: 0.7, freq: "monthly" },
   { path: "/gift-finder", priority: 0.7, freq: "monthly" },
@@ -29,6 +31,17 @@ const STATIC_PAGES = [
 export default async function sitemap() {
   // الصفحات المخصّصة المنشورة — تدخل الخريطة تلقائيًا
   const custom = await listPages({ status: "published" }).catch(() => []);
+  // مقالات المدوّنة المنشورة
+  const posts = await listPosts({ status: "published", limit: 200 }).catch(() => []);
+  const postEntries = posts
+    .filter((p) => !(p.noIndex === true || p.noIndex === 1))
+    .map((p) => ({
+      url: `${siteUrl()}/blog/${encodeURIComponent(p.slug)}`,
+      lastModified: p.updatedAt ? new Date(p.updatedAt) : new Date(),
+      changeFrequency: "monthly",
+      priority: 0.6,
+    }));
+
   const customEntries = custom
     .filter((p) => !(p.noIndex === true || p.noIndex === 1))
     .map((p) => ({
@@ -83,5 +96,6 @@ export default async function sitemap() {
       priority: 0.7,
     })),
     ...customEntries,
+    ...postEntries,
   ];
 }
