@@ -172,9 +172,17 @@ export function organizationSchema(settings = {}) {
     .filter(([k, v]) => k.startsWith("social_") && v)
     .map(([, v]) => v);
 
+  /**
+   * ⚠️ ترقية من `Store` العام إلى نوع محدّد.
+   *
+   * `Florist` نوع فرعي من `LocalBusiness` تعرفه Google، وهو ما
+   * يؤهّل المتجر لبطاقة النشاط المحلي وخريطة النتائج — بينما
+   * `Store` العام لا يفعل. يُضبط من /admin/seo لأن النواة تخدم
+   * مجالات مختلفة.
+   */
   const org = {
     "@context": "https://schema.org",
-    "@type": "Store",
+    "@type": settings.seo_business_type || "Store",
     name: settings.store_name || SITE.name,
     url,
     image: settings.store_logo || `${url}/icon.png`,
@@ -192,6 +200,19 @@ export function organizationSchema(settings = {}) {
     org.address = { "@type": "PostalAddress", addressCountry: "SA", streetAddress: settings.contact_address };
   }
   if (settings.contact_hours) org.openingHours = settings.contact_hours;
+  if (settings.seo_opening_hours) org.openingHours = settings.seo_opening_hours;
+  if (settings.seo_price_range) org.priceRange = settings.seo_price_range;
+
+  /**
+   * الإحداثيات: بطاقة النشاط المحلي تحتاجها لتربط المتجر بموقع
+   * على الخريطة. بدونها يبقى المخطّط صحيحًا لكنه لا يؤهّل للظهور
+   * المحلي.
+   */
+  const lat = Number(settings.seo_geo_lat);
+  const lng = Number(settings.seo_geo_lng);
+  if (Number.isFinite(lat) && Number.isFinite(lng) && (lat || lng)) {
+    org.geo = { "@type": "GeoCoordinates", latitude: lat, longitude: lng };
+  }
 
   return org;
 }
@@ -206,7 +227,7 @@ export function websiteSchema() {
     inLanguage: "ar",
     potentialAction: {
       "@type": "SearchAction",
-      target: { "@type": "EntryPoint", urlTemplate: `${url}/shop?q={search_term_string}` },
+      target: { "@type": "EntryPoint", urlTemplate: `${url}/search?q={search_term_string}` },
       "query-input": "required name=search_term_string",
     },
   };

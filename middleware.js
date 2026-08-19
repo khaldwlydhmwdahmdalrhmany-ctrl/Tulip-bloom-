@@ -76,9 +76,31 @@ export async function middleware(request) {
     }
   }
 
-  return NextResponse.next();
+  /**
+   * ⭐ حقن المسار كترويسة.
+   *
+   * مكوّنات الخادم لا تعرف المسار الحالي في Next 14، و`x-invoke-path`
+   * ترويسة داخلية غير مضمونة في وقت التشغيل. صفحة ٤٠٤ تحتاج المسار
+   * لتبحث عن تحويل مطابق، فنحقنه هنا.
+   *
+   * الـmiddleware يعمل على Edge بلا وصول للقاعدة — لذلك يضع الترويسة
+   * فقط، والبحث في القاعدة يجري في طبقة Node داخل `not-found.jsx`.
+   */
+  const headers = new Headers(request.headers);
+  headers.set("x-pathname", pathname);
+  return NextResponse.next({ request: { headers } });
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/api/:path*"],
+  /**
+   * ⚠️ وُسّع من ["/admin/:path*", "/api/:path*"] ليشمل كل المسارات.
+   *
+   * السبب: صفحة ٤٠٤ تحتاج ترويسة `x-pathname` لتنفيذ التحويلات،
+   * وهي تُحقن هنا. الاستثناءات تمنع المرور على الملفات الثابتة
+   * والصور — لا فائدة من تشغيل الـmiddleware عليها، والمرور
+   * يضيف زمنًا على كل أصل.
+   */
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|icon.png|images/|.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico|css|js|txt|xml|csv)$).*)",
+  ],
 };
