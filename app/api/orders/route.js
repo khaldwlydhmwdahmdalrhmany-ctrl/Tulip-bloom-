@@ -77,16 +77,17 @@ export async function POST(request) {
    * نعيد مطابقة المدينة بالمنطقة ونجلب سعر الخيار من القاعدة.
    * فشل الحساب يسقط إلى سعر `store.config.js` — الطلب يمرّ.
    */
-  let shipping = { method: null, cost: null, slotLabel: "", carrier: "manual" };
+  let shipping = { method: null, cost: 0, slotLabel: "", carrier: "manual" };
+  let serverSubtotal = 0;
   try {
     const catalog = await getProducts();
-    const sub = items.reduce((sum, i) => {
+    serverSubtotal = items.reduce((sum, i) => {
       const p = catalog.find((x) => x.id === i.id);
       return p ? sum + Number(p.price) * Math.max(1, Number(i.qty) || 1) : sum;
     }, 0);
-    if (sub > 0) {
+    if (serverSubtotal > 0) {
       shipping = await resolveShipping({
-        city: customerCity, subtotal: sub,
+        city: customerCity, subtotal: serverSubtotal,
         methodId: body.shippingMethodId, slotId: body.deliverySlotId,
       });
     }
@@ -107,14 +108,30 @@ export async function POST(request) {
         const uses = await couponUsesBy({ couponId: coupon.id, phone: customerPhone });
         const res = evaluateCoupon(coupon, { subtotal, items: priced, customerUses: uses });
         if (res.ok) {
-          const totals = computeTotals({ subtotal, discount: res.discount, freeShipping: res.freeShipping });
           appliedCoupon = coupon;
-          discount = totals.discount;
-          serverTotal = totals.total;
+          discount = Math.min(res.discount, subtotal);
+          // ⚠️ الشحن المجاني من الكوبون يُلغي تكلفة الشحن المحسوبة
+          if (res.freeShipping) shipping = { ...shipping, cost: 0 };
         }
       }
     } catch { /* الخصم يسقط، الطلب يمرّ */ }
   }
+
+  /**
+   * ⚠️ الإجمالي النهائي يُجمع على الخادم.
+   *
+   * كان الشحن يُسجَّل في عموده ولا يُضاف إلى `total` — **مُختبَر:
+   * طلب بمنتج ٢٤٥ وشحن ٣٥ سُجّل إجماليه ٢٤٥**. أي خسارة قيمة
+   * الشحن في كل طلب، وتقرير مبيعات ناقص.
+   *
+   * الترتيب: المنتجات − الخصم + الشحن. والسقوط إلى ما أرسله
+   * العميل يقع فقط إن فشل حساب المجموع من الكتالوج (طلب بلا
+   * معرّفات منتجات، كنموذج التنسيق المخصّص).
+   */
+  const shipCost = Number(shipping.cost) || 0;
+  serverTotal = serverSubtotal > 0
+    ? Math.max(0, Math.round(serverSubtotal - discount)) + shipCost
+    : Math.max(0, Math.round(numTotal - discount)) + shipCost;
 
   try {
     const order = await createOrder({
@@ -132,7 +149,7 @@ export async function POST(request) {
       couponCode: appliedCoupon ? appliedCoupon.code : null,
       discount,
       shippingMethod: shipping.method || null,
-      shippingCost: shipping.cost ?? 0,
+      shippingCost: shipCost,
       deliveryDate: body.deliveryDate ? String(body.deliveryDate).slice(0, 20) : null,
       deliverySlot: shipping.slotLabel || null,
       // بيانات الإسناد التسويقي — نصوص قصيرة فقط
