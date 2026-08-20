@@ -1,6 +1,7 @@
 import React from "react";
 import {
   listGatewayConfigs, maskGatewayConfigs, listPayments, paymentStats, listEvents,
+  gatewayDiagnostics,
 } from "../../../lib/paymentsDb.js";
 import { GATEWAY_LIST, METHOD_LABELS } from "../../../lib/gateways.js";
 import { siteUrl } from "../../../lib/seo.jsx";
@@ -12,11 +13,12 @@ export const dynamic = "force-dynamic";
 const T = themeColors();
 
 export default async function AdminPaymentsPage() {
-  const [configs, payments, stats, events] = await Promise.all([
+  const [configs, payments, stats, events, diagnostics] = await Promise.all([
     listGatewayConfigs().catch(() => ({})),
     listPayments({ limit: 60 }).catch(() => []),
     paymentStats({ days: 30 }).catch(() => ({})),
     listEvents({ limit: 25 }).catch(() => []),
+    gatewayDiagnostics().catch(() => ({})),
   ]);
 
   return (
@@ -36,7 +38,9 @@ export default async function AdminPaymentsPage() {
         gatewayList={GATEWAY_LIST.map((g) => ({
           code: g.code, name: g.name, hint: g.hint, needsKeys: g.needsKeys,
           fields: g.fields || [], methods: g.methods || [], docs: g.docs || "",
+          implemented: !!g.implemented,
         }))}
+        diagnostics={diagnostics}
         methodLabels={METHOD_LABELS}
         payments={payments.map((p) => ({
           id: p.id, orderId: p.orderId, gateway: p.gateway, method: p.method || "",
