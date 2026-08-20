@@ -12,6 +12,9 @@ export default function CartDrawer() {
     updateQty, removeItem, customer, setCustomer,
     formTouched, canCheckout, sendToWhatsApp, toast, submitting,
     coupon, couponError, couponBusy, applyCoupon, clearCoupon, discount, payableTotal,
+    shipQuote, shipMethodId, setShipMethodId, shipOption, shippingCost, shipBusy,
+    slotId, setSlotId, deliveryDate, setDeliveryDate,
+    payMethods, payGateway, setPayGateway,
   } = useCart();
   const [codeInput, setCodeInput] = React.useState("");
 
@@ -63,7 +66,7 @@ export default function CartDrawer() {
                   <h4 className="font-bold text-sm" style={{ color: C.navy }}>بيانات التوصيل</h4>
                   <input placeholder="الاسم الكامل" value={customer.name} onChange={(e) => setCustomer((c) => ({ ...c, name: e.target.value }))} className="w-full px-3 py-2.5 rounded-xl text-sm outline-none" style={{ border: `1.5px solid ${formTouched && !customer.name.trim() ? "#c05050" : C.line}` }} />
                   <input placeholder="رقم الجوال" value={customer.phone} onChange={(e) => setCustomer((c) => ({ ...c, phone: e.target.value }))} className="w-full px-3 py-2.5 rounded-xl text-sm outline-none" style={{ border: `1.5px solid ${formTouched && !customer.phone.trim() ? "#c05050" : C.line}` }} />
-                  <input placeholder="المدينة / العنوان (اختياري)" value={customer.city} onChange={(e) => setCustomer((c) => ({ ...c, city: e.target.value }))} className="w-full px-3 py-2.5 rounded-xl text-sm outline-none" style={{ border: `1.5px solid ${C.line}` }} />
+                  <input placeholder="المدينة (يحدّد سعر الشحن)" value={customer.city} onChange={(e) => setCustomer((c) => ({ ...c, city: e.target.value }))} className="w-full px-3 py-2.5 rounded-xl text-sm outline-none" style={{ border: `1.5px solid ${C.line}` }} />
                   {formTouched && !canCheckout && (<p className="text-xs" style={{ color: "#c05050" }}>الرجاء تعبئة الاسم ورقم الجوال لإتمام الطلب.</p>)}
                 </div>
               )}
@@ -110,6 +113,96 @@ export default function CartDrawer() {
                   </div>
                 )}
 
+                {/* ══ طريقة الشحن ══ */}
+                {shipQuote?.options?.length > 0 && (
+                  <div className="flex flex-col gap-1.5">
+                    <p className="text-[10px] font-bold tracking-[.12em] uppercase" style={{ color: C.slateLight }}>
+                      طريقة التوصيل
+                      {shipQuote.zone?.name ? ` · ${shipQuote.zone.name}` : ""}
+                      {shipBusy ? " · جارٍ التحديث…" : ""}
+                    </p>
+                    {shipQuote.options.map((o) => {
+                      const on = (shipMethodId || shipQuote.options[0].id) === o.id;
+                      return (
+                        <button key={o.id} onClick={() => setShipMethodId(o.id)}
+                                className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-right transition-colors"
+                                style={{
+                                  background: on ? C.mintTint : C.pearl,
+                                  border: `1px solid ${on ? C.teal : C.line}`,
+                                }}>
+                          <span className="w-4 h-4 rounded-full shrink-0 flex items-center justify-center"
+                                style={{ border: `1.5px solid ${on ? C.teal : C.line}` }}>
+                            {on && <span className="w-2 h-2 rounded-full" style={{ background: C.teal }} />}
+                          </span>
+                          <span className="flex-1 min-w-0">
+                            <span className="block text-[13px] font-bold truncate" style={{ color: C.navy }}>{o.name}</span>
+                            {(o.etaText || o.freeOverRemaining) && (
+                              <span className="block text-[11px]" style={{ color: C.slateLight }}>
+                                {o.etaText}
+                                {o.freeOverRemaining ? ` · أضف ${formatPrice(o.freeOverRemaining)} ر.س للشحن المجاني` : ""}
+                              </span>
+                            )}
+                          </span>
+                          <span className="num text-[13px] font-bold shrink-0"
+                                style={{ color: o.free ? C.success : C.navy }}>
+                            {o.free ? "مجاني" : `${formatPrice(o.price)} ر.س`}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* ══ وقت التسليم ══ */}
+                {shipQuote?.slots?.length > 0 && (
+                  <div className="flex flex-col gap-1.5">
+                    <p className="text-[10px] font-bold tracking-[.12em] uppercase" style={{ color: C.slateLight }}>
+                      وقت التسليم (اختياري)
+                    </p>
+                    <div className="flex gap-2">
+                      <select value={slotId} onChange={(e) => setSlotId(e.target.value)}
+                              className="flex-1 px-3 py-2.5 rounded-xl text-[13px] outline-none"
+                              style={{ border: `1px solid ${C.line}`, background: C.pearl }}>
+                        <option value="">أي وقت</option>
+                        {shipQuote.slots.map((sl) => (
+                          <option key={sl.id} value={sl.id}>
+                            {sl.label} ({sl.startHour}:00–{sl.endHour}:00){sl.surcharge > 0 ? ` +${sl.surcharge}` : ""}
+                          </option>
+                        ))}
+                      </select>
+                      <input type="date" value={deliveryDate} onChange={(e) => setDeliveryDate(e.target.value)}
+                             min={new Date().toISOString().slice(0, 10)}
+                             className="px-3 py-2.5 rounded-xl text-[13px] outline-none"
+                             style={{ border: `1px solid ${C.line}`, background: C.pearl }} />
+                    </div>
+                  </div>
+                )}
+
+                {/* ══ طريقة الدفع ══ */}
+                {payMethods.length > 0 && (
+                  <div className="flex flex-col gap-1.5">
+                    <p className="text-[10px] font-bold tracking-[.12em] uppercase" style={{ color: C.slateLight }}>
+                      طريقة الدفع
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {payMethods.map((m) => {
+                        const on = payGateway === m.code;
+                        return (
+                          <button key={m.code} onClick={() => setPayGateway(m.code)}
+                                  className="px-3 py-2.5 rounded-xl text-[12px] font-bold transition-colors"
+                                  style={{
+                                    background: on ? C.navy : C.pearl,
+                                    color: on ? "#fff" : C.navy,
+                                    border: `1px solid ${on ? C.navy : C.line}`,
+                                  }}>
+                            {m.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 {/* ══ الإجماليات ══ */}
                 {discount > 0 && (
                   <>
@@ -124,6 +217,15 @@ export default function CartDrawer() {
                       </span>
                     </div>
                   </>
+                )}
+
+                {shipOption && (
+                  <div className="flex items-center justify-between text-[13px]">
+                    <span style={{ color: C.slate }}>الشحن</span>
+                    <span className="num" style={{ color: shippingCost === 0 ? C.success : C.slate }}>
+                      {shippingCost === 0 ? "مجاني" : `${formatPrice(shippingCost)} ر.س`}
+                    </span>
+                  </div>
                 )}
 
                 <div className="flex items-center justify-between">
