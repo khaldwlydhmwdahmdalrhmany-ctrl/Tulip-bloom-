@@ -24,6 +24,18 @@ export async function POST(request) {
   const def = GATEWAYS[gateway];
   if (!def) return NextResponse.json({ error: "بوابة غير معروفة." }, { status: 400 });
 
+  /**
+   * ⚠️ حارس ثانٍ على مستوى الخادم.
+   * الواجهة لا تعرض غير المنفَّذة، لكن الاعتماد على الواجهة وحدها
+   * خطأ: الطلب قد يصل من عميل قديم مخزّن أو من استدعاء مباشر.
+   */
+  if (!def.implemented) {
+    return NextResponse.json(
+      { error: "طريقة الدفع هذه غير متاحة حاليًا.", reason: "not_implemented" },
+      { status: 400 }
+    );
+  }
+
   const order = await getOrderById(orderId).catch(() => null);
   if (!order) return NextResponse.json({ error: "الطلب غير موجود." }, { status: 404 });
 
