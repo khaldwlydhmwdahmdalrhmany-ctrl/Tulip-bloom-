@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import { useRouter } from "next/navigation";
 import { X, Plus, Minus, ShoppingCart, MessageCircle, CheckCircle2, Loader2, Tag } from "lucide-react";
 import { C, formatPrice } from "../../lib/colors.js";
 import { getIcon } from "../../lib/iconMap.js";
@@ -17,6 +18,7 @@ export default function CartDrawer() {
     payMethods, payGateway, setPayGateway,
   } = useCart();
   const [codeInput, setCodeInput] = React.useState("");
+  const router = useRouter();
 
   return (
     <>
@@ -235,7 +237,7 @@ export default function CartDrawer() {
                   </span>
                 </div>
                 <button
-                  onClick={sendToWhatsApp}
+                  onClick={() => { setCartOpen(false); router.push("/checkout"); }}
                   disabled={submitting}
                   className="btn w-full py-3.5 text-sm"
                   style={{ background: "#25D366", color: "#fff" }}
@@ -243,7 +245,7 @@ export default function CartDrawer() {
                   {submitting ? (
                     <><Loader2 size={17} className="animate-spin" /> جارٍ تسجيل الطلب…</>
                   ) : (
-                    <><MessageCircle size={18} /> إتمام الطلب عبر واتساب</>
+                    <>إتمام الطلب</>
                   )}
                 </button>
               </div>

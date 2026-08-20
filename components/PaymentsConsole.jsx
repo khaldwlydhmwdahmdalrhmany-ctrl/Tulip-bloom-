@@ -35,6 +35,7 @@ const STATUS = {
 export default function PaymentsConsole({
   gateways: g0 = {}, gatewayList = [], methodLabels = {},
   payments: p0 = [], stats = {}, events = [], webhookBase = "", currency = "ر.س",
+  diagnostics = {},
 }) {
   const [tab, setTab] = useState("gateways");
   const [gateways, setGateways] = useState(g0);
@@ -135,7 +136,9 @@ export default function PaymentsConsole({
             <ShieldCheck size={16} style={{ color: T.success }} className="shrink-0 mt-0.5" />
             <p className="text-xs leading-relaxed" style={{ color: T.ink }}>
               <strong>الدفع عند الاستلام والتحويل البنكي يعملان بلا أي مفتاح</strong> — فعّلهما وابدأ اليوم.
-              البوابات الإلكترونية تعمل فور إضافة مفاتيحها.
+              <br />
+              ⚠️ البوابات الموسومة <strong>«التكامل قيد الإنجاز»</strong> لن تظهر للعملاء مهما فعّلتها
+              وأضفت مفاتيحها — حمايةً من طلب يُسجَّل بلا دفع. تظهر تلقائيًا فور كتابة تكاملها.
               <br />
               المفاتيح تُحفظ على الخادم وتُعرض مقنّعة، ولا تغادر القاعدة إلى المتصفح إطلاقًا.
             </p>
@@ -161,6 +164,18 @@ export default function PaymentsConsole({
                         <span className="text-[10px] px-2 py-0.5 rounded-full"
                               style={{ background: `${T.success}18`, color: T.success }}>
                           مفعّلة{g.needsKeys ? ` · ${(draft.mode ?? cur.mode) === "live" ? "مباشر" : "اختبار"}` : ""}
+                        </span>
+                      )}
+                      {!g.implemented && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full font-bold"
+                              style={{ background: `${T.warning}20`, color: T.warning }}>
+                          التكامل قيد الإنجاز
+                        </span>
+                      )}
+                      {diagnostics[g.code]?.visible && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full font-bold"
+                              style={{ background: `${T.success}18`, color: T.success }}>
+                          ✓ تظهر للعملاء
                         </span>
                       )}
                     </p>
@@ -280,6 +295,15 @@ export default function PaymentsConsole({
                           className="px-5 py-2.5 rounded-xl text-[12px] font-bold"
                           style={{ background: T.primary, color: "#fff" }}>حفظ</button>
                 </div>
+
+                {/* سبب عدم الظهور — يمنع البحث عن العلّة في السجلّات */}
+                {diagnostics[g.code] && !diagnostics[g.code].visible && (
+                  <p className="text-[11px] px-3 py-2 rounded-lg flex items-center gap-2"
+                     style={{ background: T.surfaceAlt, color: T.muted }}>
+                    <AlertTriangle size={12} style={{ color: T.warning }} />
+                    لا تظهر للعملاء: {diagnostics[g.code].reason}
+                  </p>
+                )}
               </div>
             );
           })}
