@@ -95,7 +95,57 @@ export function CartProvider({ children, allProducts }) {
   useEffect(() => { if (coupon) setCoupon(null); /* eslint-disable-next-line */ }, [cartTotal]);
 
   const discount = coupon?.discount || 0;
-  const payableTotal = Math.max(0, cartTotal - discount);
+
+  /* ══ الشحن ══
+     الخيارات تُجلب من الخادم بحسب المدينة والسلة. النتيجة
+     للعرض فقط — مسار الطلبات يعيد الحساب (§٢٢.٧). */
+  const [shipQuote, setShipQuote] = useState(null);
+  const [shipMethodId, setShipMethodId] = useState("");
+  const [slotId, setSlotId] = useState("");
+  const [deliveryDate, setDeliveryDate] = useState("");
+  const [shipBusy, setShipBusy] = useState(false);
+
+  useEffect(() => {
+    if (cartDetails.length === 0) { setShipQuote(null); return; }
+    setShipBusy(true);
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch("/api/shipping/quote", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            city: customer.city,
+            items: cartDetails.map((i) => ({ id: i.id, qty: i.qty })),
+          }),
+        });
+        const d = await res.json();
+        setShipQuote(d);
+        // الخيار المختار يبقى إن ظلّ متاحًا، وإلا نعود للأول
+        setShipMethodId((prev) => (d.options?.some((o) => o.id === prev) ? prev : d.options?.[0]?.id || ""));
+      } catch { /* يبقى السعر الافتراضي */ }
+      finally { setShipBusy(false); }
+    }, 350);
+    return () => clearTimeout(t);
+  }, [cartDetails, customer.city]);
+
+  const shipOption = shipQuote?.options?.find((o) => o.id === shipMethodId) || shipQuote?.options?.[0] || null;
+  const slot = shipQuote?.slots?.find((s) => s.id === slotId) || null;
+  const shippingCost = (shipOption ? shipOption.price : 0) + (slot ? slot.surcharge : 0);
+
+  /* ══ الدفع ══ */
+  const [payMethods, setPayMethods] = useState([]);
+  const [payGateway, setPayGateway] = useState("");
+
+  useEffect(() => {
+    fetch("/api/payments/methods")
+      .then((r) => r.json())
+      .then((d) => {
+        setPayMethods(d.methods || []);
+        setPayGateway((prev) => prev || d.methods?.[0]?.code || "");
+      })
+      .catch(() => {});
+  }, []);
+
+  const payableTotal = Math.max(0, cartTotal - discount) + shippingCost;
 
   /* ══ السلة المتروكة ══
      معرّف جلسة ثابت في localStorage: أغلب من يترك سلة لم يسجّل
@@ -152,6 +202,11 @@ export function CartProvider({ children, allProducts }) {
       (discount > 0
         ? `المجموع: ${formatPrice(cartTotal)} ريال\nالخصم (${coupon.code}): -${formatPrice(discount)} ريال\n`
         : "") +
+      (shippingCost > 0
+        ? `الشحن (${shipOption?.name || "التوصيل"}): ${formatPrice(shippingCost)} ريال\n`
+        : shipOption?.free ? "الشحن: مجاني\n" : "") +
+      (slot ? `وقت التسليم: ${slot.label}\n` : "") +
+      (deliveryDate ? `تاريخ التسليم: ${deliveryDate}\n` : "") +
       `الإجمالي: ${formatPrice(payableTotal)} ريال\n\n` +
       `الاسم: ${customer.name}\nالجوال: ${customer.phone}\nالمدينة / العنوان: ${customer.city || "—"}`;
 
@@ -170,6 +225,9 @@ export function CartProvider({ children, allProducts }) {
           total: payableTotal,
           couponCode: coupon?.code || null,
           sessionId: sessionIdRef.current,
+          shippingMethodId: shipMethodId || null,
+          deliverySlotId: slotId || null,
+          deliveryDate: deliveryDate || null,
           // مصدر الزيارة التي أنتجت هذا الطلب — أساس تقارير لوحة التحكم
           source: attr?.source, medium: attr?.medium,
           campaign: attr?.campaign, landingPath: attr?.landingPath,
@@ -187,7 +245,7 @@ export function CartProvider({ children, allProducts }) {
     setSubmitting(false);
     setConfirmation({ orderNumber, total: payableTotal, name: customer.name, link: buildWhatsAppLink(finalMsg) });
     window.open(buildWhatsAppLink(finalMsg), "_blank");
-  }, [customer, cart, cartDetails, cartTotal, payableTotal, discount, coupon, submitting]);
+  }, [customer, cart, cartDetails, cartTotal, payableTotal, discount, coupon, submitting, shipMethodId, shipOption, shippingCost, slot, slotId, deliveryDate]);
 
   /** يُستدعى من شاشة التأكيد لبدء طلب جديد. */
   const closeConfirmation = useCallback(() => {
@@ -208,6 +266,9 @@ export function CartProvider({ children, allProducts }) {
   const value = {
     cart, cartDetails, cartCount, cartTotal, cartOpen, setCartOpen,
     coupon, couponError, couponBusy, applyCoupon, clearCoupon, discount, payableTotal,
+    shipQuote, shipMethodId, setShipMethodId, shipOption, shippingCost, shipBusy,
+    slotId, setSlotId, slot, deliveryDate, setDeliveryDate,
+    payMethods, payGateway, setPayGateway,
     addToCart, updateQty, removeItem, buyNow,
     customer, setCustomer, formTouched, setFormTouched, canCheckout, sendToWhatsApp,
     toast, submitting, confirmation, closeConfirmation,

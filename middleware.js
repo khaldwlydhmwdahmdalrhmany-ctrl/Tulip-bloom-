@@ -24,6 +24,9 @@ const PUBLIC_API = [
   { path: "/api/cart/abandon", methods: ["POST"] },
   // خيارات الشحن: تحتاجها السلة قبل تسجيل الدخول، والأسعار تُقرأ من القاعدة
   { path: "/api/shipping/quote", methods: ["POST"] },
+  // الدفع: طرق متاحة وبدء عملية — كلاهما يقرأ المبلغ من القاعدة
+  { path: "/api/payments/methods", methods: ["GET"] },
+  { path: "/api/payments/init", methods: ["POST"] },
   { path: "/api/admin/login", methods: ["POST"] },
   { path: "/api/admin/logout", methods: ["POST"] },
 ];
@@ -39,9 +42,17 @@ const PUBLIC_API = [
  * بلا وصول لقاعدة البيانات، وجلسات العملاء مخزّنة في القاعدة
  * لتكون قابلة للإبطال. التحقّق يجري في طبقة Node.
  */
+/**
+ * ⚠️ مسار الـwebhook عام بالضرورة — البوابة تستدعيه من خوادمها
+ * ولا تملك جلسة. حمايته توقيع مشفّر لا جلسة:
+ * انظر verifyWebhookSignature في lib/gateways.js
+ */
+const WEBHOOK_PREFIX = "/api/payments/webhook/";
+
 const CUSTOMER_API_PREFIX = "/api/account/";
 
 function isPublic(pathname, method) {
+  if (pathname.startsWith(WEBHOOK_PREFIX)) return true;
   if (pathname.startsWith(CUSTOMER_API_PREFIX)) return true;
   return PUBLIC_API.some(
     (r) => pathname === r.path && r.methods.includes(method)
