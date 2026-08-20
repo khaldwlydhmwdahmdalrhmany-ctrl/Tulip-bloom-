@@ -8,7 +8,8 @@
     "build": "NODE_OPTIONS=--experimental-sqlite next build",
     "start": "NODE_OPTIONS=--experimental-sqlite next start",
     "seed": "NODE_OPTIONS=--experimental-sqlite node scripts/seed.mjs",
-    "seed:tulip": "NODE_OPTIONS=--experimental-sqlite node scripts/seed-tulip.mjs"
+    "seed:tulip": "NODE_OPTIONS=--experimental-sqlite node scripts/seed-tulip.mjs",
+    "setup:launch": "NODE_OPTIONS=--experimental-sqlite node scripts/setup-launch.mjs"
   },
   "dependencies": {
     "@vercel/blob": "^2.6.1",

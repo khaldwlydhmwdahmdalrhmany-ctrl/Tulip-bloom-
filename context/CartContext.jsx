@@ -247,6 +247,83 @@ export function CartProvider({ children, allProducts }) {
     window.open(buildWhatsAppLink(finalMsg), "_blank");
   }, [customer, cart, cartDetails, cartTotal, payableTotal, discount, coupon, submitting, shipMethodId, shipOption, shippingCost, slot, slotId, deliveryDate]);
 
+  /**
+   * ══ إتمام الطلب الفعلي ══
+   *
+   * مسار الدفع الحقيقي، مستقل تمامًا عن واتساب:
+   *   ينشئ الطلب → يبدأ عملية الدفع → يُرجع النتيجة للصفحة.
+   *
+   * ⚠️ لا يمسح السلة هنا. المسح يقع في صفحة النجاح بعد تأكيد
+   * إنشاء الطلب — لو مسحناها قبل التحويل للبوابة وفشل التحويل
+   * لخسر العميل سلته ولم يدفع.
+   */
+  const placeOrder = useCallback(async (extra = {}) => {
+    if (submitting) return { ok: false };
+    if (!customer.name.trim() || !customer.phone.trim()) {
+      setFormTouched(true);
+      return { ok: false, error: "الاسم ورقم الجوال مطلوبان." };
+    }
+    setSubmitting(true);
+    const attr = resolveAttribution();
+    trackBeginCheckout(cartDetails, cartTotal);
+
+    try {
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customerName: customer.name,
+          customerPhone: customer.phone,
+          customerCity: customer.city,
+          items: cartDetails.map((i) => ({ id: i.id, name: i.product.name, qty: i.qty, price: i.product.price })),
+          total: payableTotal,
+          couponCode: coupon?.code || null,
+          sessionId: sessionIdRef.current,
+          shippingMethodId: shipMethodId || null,
+          deliverySlotId: slotId || null,
+          deliveryDate: deliveryDate || null,
+          notes: extra.notes || null,
+          source: attr?.source, medium: attr?.medium,
+          campaign: attr?.campaign, landingPath: attr?.landingPath,
+        }),
+      });
+      if (!res.ok) {
+        setSubmitting(false);
+        return { ok: false, error: "تعذّر إنشاء الطلب. حاول مرة أخرى." };
+      }
+      const order = await res.json();
+      trackPurchase(order.orderNumber, cartDetails, cartTotal, attr);
+
+      // بدء الدفع — فشله لا يُلغي الطلب، يبقى «غير مدفوع»
+      let payment = null;
+      if (payGateway) {
+        try {
+          const pr = await fetch("/api/payments/init", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ orderId: order.id, gateway: payGateway }),
+          });
+          payment = await pr.json().catch(() => null);
+        } catch {}
+      }
+
+      setSubmitting(false);
+      return { ok: true, order, payment, gateway: payGateway };
+    } catch {
+      setSubmitting(false);
+      return { ok: false, error: "تعذّر الاتصال. تحقّق من الشبكة." };
+    }
+  }, [customer, cartDetails, cartTotal, payableTotal, coupon, submitting,
+      shipMethodId, slotId, deliveryDate, payGateway]);
+
+  /** تفريغ السلة بعد نجاح الطلب — تستدعيه صفحة النجاح. */
+  const clearAfterOrder = useCallback(() => {
+    setCart([]);
+    setCartOpen(false);
+    setCoupon(null);
+    setSlotId("");
+    setDeliveryDate("");
+  }, []);
+
   /** يُستدعى من شاشة التأكيد لبدء طلب جديد. */
   const closeConfirmation = useCallback(() => {
     setConfirmation(null);
@@ -269,6 +346,7 @@ export function CartProvider({ children, allProducts }) {
     shipQuote, shipMethodId, setShipMethodId, shipOption, shippingCost, shipBusy,
     slotId, setSlotId, slot, deliveryDate, setDeliveryDate,
     payMethods, payGateway, setPayGateway,
+    placeOrder, clearAfterOrder,
     addToCart, updateQty, removeItem, buyNow,
     customer, setCustomer, formTouched, setFormTouched, canCheckout, sendToWhatsApp,
     toast, submitting, confirmation, closeConfirmation,
